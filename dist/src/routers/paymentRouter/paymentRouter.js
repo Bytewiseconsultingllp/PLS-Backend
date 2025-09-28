@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.paymentRouter = void 0;
+const express_1 = require("express");
+const paymentController_1 = require("../../controllers/paymentController/paymentController");
+const validationMiddleware_1 = require("../../middlewares/validationMiddleware");
+const authMiddleware_1 = __importDefault(require("../../middlewares/authMiddleware"));
+const zod_1 = require("../../validation/zod");
+const paymentRouter = (0, express_1.Router)();
+exports.paymentRouter = paymentRouter;
+paymentRouter.post("/create-payment-intent", authMiddleware_1.default.checkToken, (0, validationMiddleware_1.validateDataMiddleware)(zod_1.createPaymentIntentSchema), (req, res) => paymentController_1.PaymentController.createPaymentIntent(req, res));
+paymentRouter.get("/payment-intent/:paymentIntentId/status", authMiddleware_1.default.checkToken, (req, res) => paymentController_1.PaymentController.getPaymentIntentStatus(req, res));
+paymentRouter.post("/create-checkout-session", authMiddleware_1.default.checkToken, (0, validationMiddleware_1.validateDataMiddleware)(zod_1.createCheckoutSessionSchema), (req, res) => paymentController_1.PaymentController.createCheckoutSession(req, res));
+paymentRouter.get("/checkout-session/:sessionId/status", authMiddleware_1.default.checkToken, (req, res) => paymentController_1.PaymentController.getCheckoutSessionStatus(req, res));
+paymentRouter.post("/webhook", (req, res) => paymentController_1.PaymentController.handleWebhook(req, res));
+paymentRouter.post("/create-refund", authMiddleware_1.default.checkToken, (0, validationMiddleware_1.validateDataMiddleware)(zod_1.createRefundSchema), (req, res) => paymentController_1.PaymentController.createRefund(req, res));
+paymentRouter.get("/history", authMiddleware_1.default.checkToken, (req, res) => paymentController_1.PaymentController.getPaymentHistory(req, res));

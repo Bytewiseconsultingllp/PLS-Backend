@@ -1,0 +1,139 @@
+{
+  "whoYouAre": {
+    "fullName": "Honey Sinfh",
+    "email": "honeysingh@gmail.com",
+    "timeZone": "Asia/Calcutta",
+    "country": "IN",
+    "professionalLinks": {
+      "github": "https://www.google.com/",
+      "gitlab": "https://www.google.com/",
+      "dribbble": "https://www.google.com/",
+      "behance": "https://www.google.com/",
+      "medium": "https://www.google.com/",
+      "stackoverflow": "https://www.google.com/",
+      "kaggle": "https://www.google.com/",
+      "personalSite": "https://www.google.com/",
+      "linkedin": "https://www.google.com/"
+    }
+  },
+  "coreRole": {
+    "primaryDomain": "Software Engineering"
+  },
+  "eliteSkillCards": {
+    "selectedSkills": ["Python / Java / C# / Go", "Node.js / Express"]
+  },
+  "toolstackProficiency": {
+    "selectedTools": [
+      {
+        "category": "Programming Languages",
+        "tools": ["Rust", "Go 1.23", "Python 3.13"]
+      },
+      {
+        "category": "Containers & Orchestration",
+        "tools": ["Kubernetes v1.30", "DevSpace"]
+      },
+      {
+        "category": "API Tools",
+        "tools": ["OpenAPI 3.1"]
+      },
+      {
+        "category": "Observability",
+        "tools": ["OpenTelemetry"]
+      }
+    ]
+  },
+  "domainExperience": {
+    "roles": [
+      {
+        "title": "Full-Stack Developer",
+        "years": 13
+      }
+    ]
+  },
+  "industryExperience": {
+    "selectedIndustries": [
+      "Fintech",
+      "HealthTech",
+      "SaaS (B2B/B2C)",
+      "EdTech",
+      "Real Estate & PropTech",
+      "ClimateTech / Energy",
+      "Marketing & AdTech"
+    ]
+  },
+  "availabilityWorkflow": {
+    "weeklyCommitment": 20,
+    "workingHours": ["8am–12pm"],
+    "collaborationTools": ["Slack", "Notion", "Zoom"],
+    "teamStyle": "scheduled-standups",
+    "screenSharing": "yes",
+    "availabilityExceptions": "asdaSDasd asd. D asdasd"
+  },
+  "softSkills": {
+    "collaborationStyle": "agile",
+    "communicationFrequency": "adhoc",
+    "conflictResolution": "empathic",
+    "languages": ["English"],
+    "teamVsSolo": "solo"
+  },
+  "certifications": {
+    "certificates": [
+      {
+        "name": "aSDasd",
+        "url": "https://www.google.com/"
+      }
+    ]
+  },
+  "projectQuoting": {
+    "compensationPreference": "fixed",
+    "smallProjectPrice": 31,
+    "midProjectPrice": 13,
+    "longTermPrice": 7,
+    "milestoneTerms": "30/40/30",
+    "willSubmitProposals": "yes-template"
+  },
+  "legalAgreements": {
+    "agreements": [
+      {
+        "id": "nda",
+        "accepted": true
+      },
+      {
+        "id": "workForHire",
+        "accepted": true
+      },
+      {
+        "id": "scope",
+        "accepted": true
+      },
+      {
+        "id": "payment",
+        "accepted": true
+      },
+      {
+        "id": "security",
+        "accepted": true
+      },
+      {
+        "id": "nonSolicitation",
+        "accepted": true
+      },
+      {
+        "id": "codeOfConduct",
+        "accepted": true
+      },
+      {
+        "id": "ipBoundaries",
+        "accepted": true
+      }
+    ],
+    "identityVerification": {
+      "idType": "national-id",
+      "taxDocType": "w9",
+      "addressVerified": true
+    },
+    "workAuthorization": {
+      "interested": true
+    }
+  }
+}
