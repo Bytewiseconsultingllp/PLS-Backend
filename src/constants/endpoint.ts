@@ -14,7 +14,7 @@ export default {
   MILESTONE: `/milestone`,
   BLOG: `/blog`,
   PROJECTREQUESTROUTE: `/projectRequest`,
-  PROJECTBUILDERROUTE: `/projectBuilder`,
+  PROJECTBUILDERROUTE: `/project-builder`,
   VISITORSROUTE: `/visitors`,
   PAYMENTROUTE: `/payment`,
 };

@@ -37,7 +37,7 @@ exports.defaultRouter.use(endpoint_1.default.HIREUSROUTE, hireUsRouter_1.hireUsR
 exports.defaultRouter.use(endpoint_1.default.FREELANCER, freeLancerRouter_1.freeLancerRouter);
 exports.defaultRouter.use(endpoint_1.default.PROJECT, projectRouter_1.projectRouter);
 exports.defaultRouter.use(endpoint_1.default.MILESTONE, mileStoneRouter_1.milestoneRouter);
-exports.defaultRouter.use(endpoint_1.default.BLOG, blogRouter_1.blogRouter);
 exports.defaultRouter.use(endpoint_1.default.PROJECTBUILDERROUTE, projectBuilderRouter_1.projectBuilderRouter);
+exports.defaultRouter.use(endpoint_1.default.BLOG, blogRouter_1.blogRouter);
 exports.defaultRouter.use(endpoint_1.default.VISITORSROUTE, visitorsRouter_1.visitorsRouter);
 exports.defaultRouter.use(endpoint_1.default.PAYMENTROUTE, paymentRouter_1.paymentRouter);

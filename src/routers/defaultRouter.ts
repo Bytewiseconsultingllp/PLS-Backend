@@ -44,10 +44,10 @@ defaultRouter.use(endpoint.FREELANCER, freeLancerRouter);
 defaultRouter.use(endpoint.PROJECT, projectRouter);
 // **   PROJECTMILESTONE ROUTER
 defaultRouter.use(endpoint.MILESTONE, milestoneRouter);
+// **   PROJECTBUILDER ROUTER
+defaultRouter.use(endpoint.PROJECTBUILDERROUTE, projectBuilderRouter);
 // **   BLOG  ROUTER
 defaultRouter.use(endpoint.BLOG, blogRouter);
-// **   PROJECTBUILDER  ROUTER
-defaultRouter.use(endpoint.PROJECTBUILDERROUTE, projectBuilderRouter);
 // **   VISITORS  ROUTER
 defaultRouter.use(endpoint.VISITORSROUTE, visitorsRouter);
 // **   PAYMENT  ROUTER

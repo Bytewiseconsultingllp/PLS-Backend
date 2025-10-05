@@ -97,6 +97,12 @@ exports.default = {
                 additionalNotes: true,
                 createdAt: true,
                 updatedAt: true,
+                interestedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+                selectedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
             },
         });
         if (!projectBuilder) {
@@ -140,6 +146,12 @@ exports.default = {
                     additionalNotes: true,
                     createdAt: true,
                     updatedAt: true,
+                    interestedFreelancers: {
+                        select: { uid: true, username: true, fullName: true, email: true },
+                    },
+                    selectedFreelancers: {
+                        select: { uid: true, username: true, fullName: true, email: true },
+                    },
                 },
                 orderBy: { createdAt: "desc" },
                 skip,
@@ -218,6 +230,12 @@ exports.default = {
                 additionalNotes: true,
                 createdAt: true,
                 updatedAt: true,
+                interestedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+                selectedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
             },
         });
         (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, updatedProjectBuilder);
@@ -244,5 +262,194 @@ exports.default = {
             },
         });
         (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, "Project deleted successfully", null);
+    })),
+    addInterestedFreelancers: (0, asyncHandlerUtils_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { id } = req.params;
+        const { interestedFreelancerIds } = req.body;
+        if (!id) {
+            throw { status: constants_1.BADREQUESTCODE, message: "Project ID is required." };
+        }
+        if (!Array.isArray(interestedFreelancerIds)) {
+            throw {
+                status: constants_1.BADREQUESTCODE,
+                message: "Send an array of freelancer IDs who are interested.",
+            };
+        }
+        const existingProject = yield db_1.db.projectBuilder.findUnique({
+            where: { id: id, trashedAt: null, trashedBy: null },
+        });
+        if (!existingProject) {
+            throw { status: constants_1.NOTFOUNDCODE, message: "Project not found." };
+        }
+        const updatedProject = yield db_1.db.projectBuilder.update({
+            where: { id: id },
+            data: {
+                interestedFreelancers: {
+                    connect: interestedFreelancerIds.map((freelancerId) => ({
+                        uid: freelancerId,
+                    })),
+                },
+            },
+            select: {
+                id: true,
+                projectName: true,
+                interestedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+            },
+        });
+        (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, updatedProject);
+    })),
+    removeInterestedFreelancer: (0, asyncHandlerUtils_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { id } = req.params;
+        const { freelancerUid } = req.body;
+        if (!id) {
+            throw { status: constants_1.BADREQUESTCODE, message: "Project ID is required." };
+        }
+        if (!freelancerUid) {
+            throw {
+                status: constants_1.BADREQUESTCODE,
+                message: "Freelancer UID is required.",
+            };
+        }
+        const existingProject = yield db_1.db.projectBuilder.findUnique({
+            where: { id: id, trashedAt: null, trashedBy: null },
+        });
+        if (!existingProject) {
+            throw { status: constants_1.NOTFOUNDCODE, message: "Project not found." };
+        }
+        const updatedProject = yield db_1.db.projectBuilder.update({
+            where: { id: id },
+            data: {
+                interestedFreelancers: {
+                    disconnect: { uid: freelancerUid },
+                },
+            },
+            select: {
+                id: true,
+                projectName: true,
+                interestedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+            },
+        });
+        (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, updatedProject);
+    })),
+    selectFreelancers: (0, asyncHandlerUtils_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { id } = req.params;
+        const { selectedFreelancerIds } = req.body;
+        if (!id) {
+            throw { status: constants_1.BADREQUESTCODE, message: "Project ID is required." };
+        }
+        if (!Array.isArray(selectedFreelancerIds)) {
+            throw {
+                status: constants_1.BADREQUESTCODE,
+                message: "Send an array of freelancer IDs to select.",
+            };
+        }
+        const existingProject = yield db_1.db.projectBuilder.findUnique({
+            where: { id: id, trashedAt: null, trashedBy: null },
+        });
+        if (!existingProject) {
+            throw { status: constants_1.NOTFOUNDCODE, message: "Project not found." };
+        }
+        const updatedProject = yield db_1.db.projectBuilder.update({
+            where: { id: id },
+            data: {
+                selectedFreelancers: {
+                    connect: selectedFreelancerIds.map((freelancerId) => ({
+                        uid: freelancerId,
+                    })),
+                },
+            },
+            select: {
+                id: true,
+                projectName: true,
+                selectedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+            },
+        });
+        (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, updatedProject);
+    })),
+    removeSelectedFreelancer: (0, asyncHandlerUtils_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { id } = req.params;
+        const { freelancerUid } = req.body;
+        if (!id) {
+            throw { status: constants_1.BADREQUESTCODE, message: "Project ID is required." };
+        }
+        if (!freelancerUid) {
+            throw {
+                status: constants_1.BADREQUESTCODE,
+                message: "Freelancer UID is required.",
+            };
+        }
+        const existingProject = yield db_1.db.projectBuilder.findUnique({
+            where: { id: id, trashedAt: null, trashedBy: null },
+        });
+        if (!existingProject) {
+            throw { status: constants_1.NOTFOUNDCODE, message: "Project not found." };
+        }
+        const updatedProject = yield db_1.db.projectBuilder.update({
+            where: { id: id },
+            data: {
+                selectedFreelancers: {
+                    disconnect: { uid: freelancerUid },
+                },
+            },
+            select: {
+                id: true,
+                projectName: true,
+                selectedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+            },
+        });
+        (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, {
+            message: "Freelancer removed from selected list successfully.",
+            updatedProject,
+        });
+    })),
+    getProjectBuilderWithFreelancers: (0, asyncHandlerUtils_1.asyncHandler)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { id } = req.params;
+        if (!id) {
+            throw { status: constants_1.BADREQUESTCODE, message: "Project ID is required." };
+        }
+        const projectBuilder = yield db_1.db.projectBuilder.findUnique({
+            where: {
+                id: id,
+                trashedAt: null,
+                trashedBy: null,
+            },
+            select: {
+                id: true,
+                projectName: true,
+                projectDescription: true,
+                projectType: true,
+                technologies: true,
+                features: true,
+                budget: true,
+                timeline: true,
+                priority: true,
+                status: true,
+                clientName: true,
+                clientEmail: true,
+                clientPhone: true,
+                clientCompany: true,
+                additionalNotes: true,
+                createdAt: true,
+                updatedAt: true,
+                interestedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+                selectedFreelancers: {
+                    select: { uid: true, username: true, fullName: true, email: true },
+                },
+            },
+        });
+        if (!projectBuilder) {
+            throw { status: constants_1.NOTFOUNDCODE, message: "Project not found." };
+        }
+        (0, apiResponseUtils_1.httpResponse)(req, res, constants_1.SUCCESSCODE, constants_1.SUCCESSMSG, projectBuilder);
     })),
 };

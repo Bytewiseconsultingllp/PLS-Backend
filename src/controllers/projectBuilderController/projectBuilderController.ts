@@ -5,7 +5,10 @@ import {
   SUCCESSMSG,
 } from "../../constants";
 import { db } from "../../database/db";
-import type { TPROJECTBUILDER_CREATE } from "../../types";
+import type {
+  TPROJECTBUILDER_CREATE,
+  TPROJECTBUILDER_FREELANCER_ASSIGNMENT,
+} from "../../types";
 import { httpResponse } from "../../utils/apiResponseUtils";
 import { asyncHandler } from "../../utils/asyncHandlerUtils";
 import type { _Request } from "../../middlewares/authMiddleware";
@@ -103,6 +106,12 @@ export default {
         additionalNotes: true,
         createdAt: true,
         updatedAt: true,
+        interestedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+        selectedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
       },
     });
 
@@ -161,6 +170,12 @@ export default {
           additionalNotes: true,
           createdAt: true,
           updatedAt: true,
+          interestedFreelancers: {
+            select: { uid: true, username: true, fullName: true, email: true },
+          },
+          selectedFreelancers: {
+            select: { uid: true, username: true, fullName: true, email: true },
+          },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -255,6 +270,12 @@ export default {
         additionalNotes: true,
         createdAt: true,
         updatedAt: true,
+        interestedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+        selectedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
       },
     });
 
@@ -289,5 +310,238 @@ export default {
     });
 
     httpResponse(req, res, SUCCESSCODE, "Project deleted successfully", null);
+  }),
+
+  // ** Add interested freelancers to ProjectBuilder
+  addInterestedFreelancers: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { interestedFreelancerIds } =
+      req.body as TPROJECTBUILDER_FREELANCER_ASSIGNMENT;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required." };
+    }
+
+    if (!Array.isArray(interestedFreelancerIds)) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Send an array of freelancer IDs who are interested.",
+      };
+    }
+
+    // Check if project exists
+    const existingProject = await db.projectBuilder.findUnique({
+      where: { id: id, trashedAt: null, trashedBy: null },
+    });
+
+    if (!existingProject) {
+      throw { status: NOTFOUNDCODE, message: "Project not found." };
+    }
+
+    const updatedProject = await db.projectBuilder.update({
+      where: { id: id },
+      data: {
+        interestedFreelancers: {
+          connect: interestedFreelancerIds.map((freelancerId) => ({
+            uid: freelancerId,
+          })),
+        },
+      },
+      select: {
+        id: true,
+        projectName: true,
+        interestedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    httpResponse(req, res, SUCCESSCODE, SUCCESSMSG, updatedProject);
+  }),
+
+  // ** Remove interested freelancer from ProjectBuilder
+  removeInterestedFreelancer: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { freelancerUid } = req.body as TPROJECTBUILDER_FREELANCER_ASSIGNMENT;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required." };
+    }
+
+    if (!freelancerUid) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Freelancer UID is required.",
+      };
+    }
+
+    // Check if project exists
+    const existingProject = await db.projectBuilder.findUnique({
+      where: { id: id, trashedAt: null, trashedBy: null },
+    });
+
+    if (!existingProject) {
+      throw { status: NOTFOUNDCODE, message: "Project not found." };
+    }
+
+    const updatedProject = await db.projectBuilder.update({
+      where: { id: id },
+      data: {
+        interestedFreelancers: {
+          disconnect: { uid: freelancerUid },
+        },
+      },
+      select: {
+        id: true,
+        projectName: true,
+        interestedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    httpResponse(req, res, SUCCESSCODE, SUCCESSMSG, updatedProject);
+  }),
+
+  // ** Select freelancers for ProjectBuilder
+  selectFreelancers: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { selectedFreelancerIds } =
+      req.body as TPROJECTBUILDER_FREELANCER_ASSIGNMENT;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required." };
+    }
+
+    if (!Array.isArray(selectedFreelancerIds)) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Send an array of freelancer IDs to select.",
+      };
+    }
+
+    // Check if project exists
+    const existingProject = await db.projectBuilder.findUnique({
+      where: { id: id, trashedAt: null, trashedBy: null },
+    });
+
+    if (!existingProject) {
+      throw { status: NOTFOUNDCODE, message: "Project not found." };
+    }
+
+    const updatedProject = await db.projectBuilder.update({
+      where: { id: id },
+      data: {
+        selectedFreelancers: {
+          connect: selectedFreelancerIds.map((freelancerId) => ({
+            uid: freelancerId,
+          })),
+        },
+      },
+      select: {
+        id: true,
+        projectName: true,
+        selectedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    httpResponse(req, res, SUCCESSCODE, SUCCESSMSG, updatedProject);
+  }),
+
+  // ** Remove selected freelancer from ProjectBuilder
+  removeSelectedFreelancer: asyncHandler(async (req: _Request, res) => {
+    const { id } = req.params;
+    const { freelancerUid } = req.body as TPROJECTBUILDER_FREELANCER_ASSIGNMENT;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required." };
+    }
+
+    if (!freelancerUid) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Freelancer UID is required.",
+      };
+    }
+
+    // Check if project exists
+    const existingProject = await db.projectBuilder.findUnique({
+      where: { id: id, trashedAt: null, trashedBy: null },
+    });
+
+    if (!existingProject) {
+      throw { status: NOTFOUNDCODE, message: "Project not found." };
+    }
+
+    const updatedProject = await db.projectBuilder.update({
+      where: { id: id },
+      data: {
+        selectedFreelancers: {
+          disconnect: { uid: freelancerUid },
+        },
+      },
+      select: {
+        id: true,
+        projectName: true,
+        selectedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    httpResponse(req, res, SUCCESSCODE, SUCCESSMSG, {
+      message: "Freelancer removed from selected list successfully.",
+      updatedProject,
+    });
+  }),
+
+  // ** Get ProjectBuilder with freelancers
+  getProjectBuilderWithFreelancers: asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required." };
+    }
+
+    const projectBuilder = await db.projectBuilder.findUnique({
+      where: {
+        id: id,
+        trashedAt: null,
+        trashedBy: null,
+      },
+      select: {
+        id: true,
+        projectName: true,
+        projectDescription: true,
+        projectType: true,
+        technologies: true,
+        features: true,
+        budget: true,
+        timeline: true,
+        priority: true,
+        status: true,
+        clientName: true,
+        clientEmail: true,
+        clientPhone: true,
+        clientCompany: true,
+        additionalNotes: true,
+        createdAt: true,
+        updatedAt: true,
+        interestedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+        selectedFreelancers: {
+          select: { uid: true, username: true, fullName: true, email: true },
+        },
+      },
+    });
+
+    if (!projectBuilder) {
+      throw { status: NOTFOUNDCODE, message: "Project not found." };
+    }
+
+    httpResponse(req, res, SUCCESSCODE, SUCCESSMSG, projectBuilder);
   }),
 };

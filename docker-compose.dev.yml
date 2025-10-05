@@ -1,0 +1,49 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: pls-postgres-dev
+    environment:
+      POSTGRES_DB: pls_backend_dev
+      POSTGRES_USER: ssingh83
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432" # Different port to avoid conflicts
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/dockerfile
+    container_name: pls-backend-dev
+    ports:
+      - "4001:4000" # Different port for development
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://ssingh83:password@postgres:5432/pls_backend_dev
+      - PORT=4000
+      - JWT_SECRET=dev-jwt-secret
+      - SMTP_HOST_EMAIL=${SMTP_HOST_EMAIL}
+      - SMTP_SECRET=${SMTP_SECRET}
+      - CLOUDINARY_NAME=${CLOUDINARY_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - WHITE_LIST_MAILS=${WHITE_LIST_MAILS}
+      - ALLOWED_ORIGIN=["http://localhost:3000","http://localhost:4001"]
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - ./src:/app/src # Mount source code for hot reload
+      - ./logs:/app/logs
+    command: npm run dev # Use development command
+
+volumes:
+  postgres_dev_data:

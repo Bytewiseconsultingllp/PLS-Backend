@@ -9,13 +9,16 @@ import logger from "../utils/loggerUtils";
 import { generateRandomStrings } from "../utils/slugStringGeneratorUtils";
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.hostinger.com",
-  port: 465,
-  secure: true,
-
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: HOST_EMAIL,
-    pass: HOST_EMAIL_SECRET,
+    pass: HOST_EMAIL_SECRET, // Use App Password for Gmail
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 

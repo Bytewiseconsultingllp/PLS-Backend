@@ -19,12 +19,16 @@ const constants_1 = require("../constants");
 const loggerUtils_1 = __importDefault(require("../utils/loggerUtils"));
 const slugStringGeneratorUtils_1 = require("../utils/slugStringGeneratorUtils");
 const transporter = nodemailer_1.default.createTransport({
-    host: "smtp.hostinger.com",
-    port: 465,
-    secure: true,
+    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
     auth: {
         user: config_1.HOST_EMAIL,
         pass: config_1.HOST_EMAIL_SECRET,
+    },
+    tls: {
+        rejectUnauthorized: false,
     },
 });
 function gloabalMailMessage(to, message, subject, header, addsOn, senderIntro) {

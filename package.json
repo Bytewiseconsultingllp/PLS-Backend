@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A freenlance plate form for freelancer just like fiverr",
   "main": "/src/server.ts",
-  "author": "zlaam",
+  "author": "Shubnit12",
   "license": "MIT",
   "scripts": {
     "lint": "eslint . && bun run type-check",
@@ -23,6 +23,8 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "test": "node",
+    "test:otp": "node test-otp.js",
+    "test:otp:integration": "node tests/otp/otp-integration.test.js",
     "prepare": "husky"
   },
   "dependencies": {

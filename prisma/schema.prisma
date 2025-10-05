@@ -58,6 +58,8 @@ model User {
   projects                Project[] @relation("InterestedFreelancers")
   kpiRankPoints           Int       @default(0)
   selectedProjects        Project[] @relation("SelectedFreelancers")
+  interestedProjectBuilders ProjectBuilder[] @relation("InterestedProjectBuilderFreelancers")
+  selectedProjectBuilders  ProjectBuilder[] @relation("SelectedProjectBuilderFreelancers")
   trashedBy               String?
   trashedAt               DateTime?
   createdAt               DateTime  @default(now())
@@ -570,6 +572,10 @@ model ProjectBuilder {
   updatedAt             DateTime @updatedAt
   trashedBy             String?
   trashedAt             DateTime?
+
+  // Many-to-Many Relations with Freelancers
+  interestedFreelancers User[] @relation("InterestedProjectBuilderFreelancers")
+  selectedFreelancers   User[] @relation("SelectedProjectBuilderFreelancers")
 
   @@index([projectName])
   @@index([clientEmail])

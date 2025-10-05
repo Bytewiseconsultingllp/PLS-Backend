@@ -25,3 +25,18 @@ exports.projectBuilderRouter
 exports.projectBuilderRouter
     .route("/:id")
     .delete(authMiddleware_1.default.checkToken, projectBuilderController_1.default.deleteProjectBuilder);
+exports.projectBuilderRouter
+    .route("/:id/freelancers")
+    .get(authMiddleware_1.default.checkToken, projectBuilderController_1.default.getProjectBuilderWithFreelancers);
+exports.projectBuilderRouter
+    .route("/:id/interested-freelancers")
+    .post(authMiddleware_1.default.checkToken, projectBuilderController_1.default.addInterestedFreelancers);
+exports.projectBuilderRouter
+    .route("/:id/interested-freelancers")
+    .delete(authMiddleware_1.default.checkToken, projectBuilderController_1.default.removeInterestedFreelancer);
+exports.projectBuilderRouter
+    .route("/:id/selected-freelancers")
+    .post(authMiddleware_1.default.checkToken, projectBuilderController_1.default.selectFreelancers);
+exports.projectBuilderRouter
+    .route("/:id/selected-freelancers")
+    .delete(authMiddleware_1.default.checkToken, projectBuilderController_1.default.removeSelectedFreelancer);

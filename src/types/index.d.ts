@@ -440,12 +440,38 @@ export type TPROJECTBUILDER = {
   updatedAt?: Date;
   trashedBy?: string;
   trashedAt?: Date;
+  interestedFreelancers?: Array<{
+    uid: string;
+    username: string;
+    fullName: string;
+    email: string;
+  }>;
+  selectedFreelancers?: Array<{
+    uid: string;
+    username: string;
+    fullName: string;
+    email: string;
+  }>;
 };
 
 export type TPROJECTBUILDER_CREATE = Omit<
   TPROJECTBUILDER,
-  "id" | "createdAt" | "updatedAt" | "trashedBy" | "trashedAt"
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "trashedBy"
+  | "trashedAt"
+  | "interestedFreelancers"
+  | "selectedFreelancers"
 >;
+
+// ProjectBuilder Freelancer Assignment Types
+export type TPROJECTBUILDER_FREELANCER_ASSIGNMENT = {
+  interestedFreelancerIds?: string[];
+  selectedFreelancerIds?: string[];
+  freelancerUid?: string;
+  freelancerUsername?: string;
+};
 
 // Visitors Types
 export type TVISITORS = {
