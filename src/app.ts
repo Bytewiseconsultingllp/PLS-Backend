@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import path from "node:path";
+import { ALLOWED_ORIGIN } from "./config/config";
 import { BASEURL } from "./constants/endpoint";
 import { errorHandler, notFoundHandler } from "./middlewares/errorMiddleware";
 import { defaultRouter } from "./routers/defaultRouter";
@@ -17,8 +18,11 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(
   cors({
-    origin: "*", // allow all origins
+    // origin: "*", // allow all origins
+    origin: ALLOWED_ORIGIN, // use allowed origins from config
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    credentials: true, // allow credentials (cookies, authorization headers, etc.)
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 app.use(express.json({ limit: "50mb" }));
