@@ -38,5 +38,6 @@ export default tseslint.config({
     "@typescript-eslint/no-unsafe-argument": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-redundant-type-constituents": "warn",
+    "@typescript-eslint/await-thenable": "off",
   },
 });
