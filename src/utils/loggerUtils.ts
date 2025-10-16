@@ -1,75 +1,55 @@
-import moment from "moment";
+// src/utils/loggerUtils.ts
 import winston from "winston";
-import "winston-daily-rotate-file";
-import { ENV } from "../config/config";
-import { red, yellow, green, magenta } from "colorette";
-export const colorizeLevel = (level: string) => {
-  if (level.includes("ERROR")) return red(level);
-  else if (level.includes("INFO")) return green(level);
-  else if (level.includes("WARN")) return yellow(level);
-  else return magenta(level);
+import DailyRotateFile from "winston-daily-rotate-file";
+
+const { combine, timestamp, printf, colorize } = winston.format;
+
+// Custom format for logging
+const logFormat = printf(({ level, message, timestamp }) => {
+  return `${timestamp} ${level}: ${message}`;
+});
+
+// Common format for all environments
+const commonFormat = combine(
+  timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+  winston.format.errors({ stack: true })
+);
+
+// Development logger with file transport
+const devLogger = () => {
+  return winston.createLogger({
+    level: "info",
+    format: combine(commonFormat, logFormat),
+    transports: [
+      new winston.transports.Console({
+        format: combine(colorize(), logFormat),
+      }),
+      new DailyRotateFile({
+        filename: "logs/application-%DATE%.log",
+        datePattern: "YYYY-MM-DD",
+        zippedArchive: true,
+        maxSize: "20m",
+        maxFiles: "14d",
+      }),
+    ],
+  });
 };
 
-const devFileTransport = new winston.transports.DailyRotateFile({
-  filename: "logs/development-%DATE%.log",
-  datePattern: "YYYY-MM-DD",
-  zippedArchive: true,
-  maxSize: "20m",
-  maxFiles: "14d",
-});
+// Production logger (console only)
+const prodLogger = () => {
+  return winston.createLogger({
+    level: "info",
+    format: combine(commonFormat, winston.format.json()),
+    transports: [
+      new winston.transports.Console({
+        format: combine(colorize(), logFormat),
+      }),
+    ],
+  });
+};
 
-const prodFileTransport = new winston.transports.DailyRotateFile({
-  filename: "logs/production-%DATE%.log",
-  datePattern: "YYYY-MM-DD",
-  zippedArchive: true,
-  maxSize: "20m",
-  maxFiles: "14d",
-});
-
-const consoleTransport = new winston.transports.Console({
-  format: winston.format.combine(
-    winston.format.prettyPrint(),
-    winston.format.printf(({ timestamp, level, message, ...meta }) => {
-      const customLevel = colorizeLevel(
-        level.includes("error")
-          ? "ERROR"
-          : level.includes("info")
-            ? "INFO"
-            : level.includes("warn")
-              ? "WARN"
-              : "DEBUG",
-      );
-      const customTimeStamp = moment(timestamp as string).format(
-        "DD/MM/YYYY  HH:mm:ss A",
-      );
-      const customLog = `
--------------------------------------------------------------------------------
-  ${customLevel}::${message as string} 
-  ${yellow("TIMESTAMP")}::${green(customTimeStamp)}
-  ${magenta("META")}::${yellow(JSON.stringify(meta, null, 2))}
--------------------------------------------------------------------------------`;
-
-      return customLog;
-    }),
-  ),
-});
-
-const logLevel = ENV === "PRODUCTION" ? "warn" : "info";
-
-const logger = winston.createLogger({
-  level: logLevel,
-  format: winston.format.combine(
-    winston.format.timestamp({
-      format: "YYYY-MM-DD HH:mm:ss",
-    }),
-    winston.format.printf(({ timestamp, level, message, ...meta }) => {
-      return `[${level}]: ${message as string} \n[time]: ${moment(timestamp as string).format("YYYY-MM-DD HH:mm:ss")} \nmeta: ${JSON.stringify(meta)}`;
-    }),
-  ),
-  transports: [
-    consoleTransport,
-    ...(ENV === "PRODUCTION" ? [prodFileTransport] : [devFileTransport]),
-  ],
-});
+// Use the appropriate logger based on environment
+const logger =
+  process.env.NODE_ENV === "production" ? prodLogger() : devLogger();
 
 export default logger;
