@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const helmet_1 = __importDefault(require("helmet"));
 const node_path_1 = __importDefault(require("node:path"));
+const config_1 = require("./config/config");
 const endpoint_1 = require("./constants/endpoint");
 const errorMiddleware_1 = require("./middlewares/errorMiddleware");
 const defaultRouter_1 = require("./routers/defaultRouter");
@@ -19,8 +20,10 @@ app.set("trust proxy", 1);
 app.disable("x-powered-by");
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: "*",
+    origin: config_1.ALLOWED_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(express_1.default.json({ limit: "50mb" }));
 app.use(express_1.default.urlencoded({ parameterLimit: 50000, extended: true }));

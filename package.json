@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit",
     "fmt": "prettier --write .",
     "copy": "copyfiles -u 1 ./src/templates/**/* ./dist/src/",
-    "prebuild": "rimraf -rf ./dist  && bun run lint && bun run fmt",
+    "prebuild": "rm -rf ./dist && bun run lint && bun run fmt",
     "build": "bun run tsc --build  && bun run copy",
     "dev": "bun run build  && nodemon  ./src/server.ts",
     "start": "bun run build && node --env-file .env ./dist/src/server.js",

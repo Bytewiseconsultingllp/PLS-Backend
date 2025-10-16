@@ -31,5 +31,12 @@ export default tseslint.config({
     "@typescript-eslint/only-throw-error": "off",
     "prefer-arrow-callback": ["error"],
     camelcase: ["error", { properties: "always" }],
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-unsafe-call": "warn",
+    "@typescript-eslint/no-unsafe-return": "warn",
+    "@typescript-eslint/no-unsafe-argument": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-redundant-type-constituents": "warn",
   },
 });
