@@ -25,6 +25,11 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+app.get("/", (req, res) => {
+  const demo: string = req.body;
+  console.log(demo);
+  res.send("<h1>Hello World</h1>");
+});
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ parameterLimit: 50000, extended: true }));
 app.use(express.static(path.resolve(__dirname, "./public")));

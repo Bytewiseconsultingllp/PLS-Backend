@@ -15,7 +15,7 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
+  "buildCommand": "bun run build",
+  "installCommand": "bun run db:generate && bun run db:push &&  bun run start",
   "outputDirectory": "dist"
 }
