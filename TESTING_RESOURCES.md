@@ -169,11 +169,11 @@ Body (JSON):
 
 ```javascript
 if (pm.response.code === 200) {
- var jsonData = pm.response.json();
- if (jsonData.accessToken) {
-   pm.environment.set("accessToken", jsonData.accessToken);
-   console.log("✅ Token saved!");
- }
+  var jsonData = pm.response.json();
+  if (jsonData.accessToken) {
+    pm.environment.set("accessToken", jsonData.accessToken);
+    console.log("✅ Token saved!");
+  }
 }
 ```
 

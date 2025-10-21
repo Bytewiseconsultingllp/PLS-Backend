@@ -888,10 +888,10 @@ POST {{baseUrl}}/auth/refreshAcessToken
 ```javascript
 // Run in Postman Tests tab
 if (pm.response.code === 200) {
- var jsonData = pm.response.json();
- pm.environment.set("accessToken", jsonData.accessToken);
- pm.environment.set("userId", jsonData.user.uid);
- console.log("✅ User logged in successfully");
+  var jsonData = pm.response.json();
+  pm.environment.set("accessToken", jsonData.accessToken);
+  pm.environment.set("userId", jsonData.user.uid);
+  console.log("✅ User logged in successfully");
 }
 ```
 
@@ -900,10 +900,10 @@ if (pm.response.code === 200) {
 ```javascript
 // Save any ID from response
 if (pm.response.code === 201) {
- var jsonData = pm.response.json();
- if (jsonData.id) {
-   pm.environment.set("lastCreatedId", jsonData.id);
- }
+  var jsonData = pm.response.json();
+  if (jsonData.id) {
+    pm.environment.set("lastCreatedId", jsonData.id);
+  }
 }
 ```
 

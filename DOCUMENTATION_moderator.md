@@ -34,4 +34,4 @@ This document outlines the API endpoints and requirements for the blog managemen
       "currentPage": number
     }
   }
-
+  ```

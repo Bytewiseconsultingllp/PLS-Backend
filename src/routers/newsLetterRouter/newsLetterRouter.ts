@@ -32,7 +32,17 @@ newsLetterRouter
     validateDataMiddleware(sendNewsLetterToSingleUserSchema),
     authMiddleware.checkToken,
     authMiddleware.checkIfUserIAdminOrModerator,
-    (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 1),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        undefined,
+        1,
+        5,
+        "newsletter",
+      ),
     newsLetterController.sendNewsLetterToSingleSubscriber,
   );
 newsLetterRouter

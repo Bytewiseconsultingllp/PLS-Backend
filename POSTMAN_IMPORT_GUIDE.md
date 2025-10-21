@@ -45,11 +45,11 @@ Since the complete collection is large, let's create requests manually using the
 
 ```json
 {
- "username": "testuser",
- "fullName": "Test User",
- "email": "test@example.com",
- "password": "SecurePass123!",
- "phone": "+1234567890"
+  "username": "testuser",
+  "fullName": "Test User",
+  "email": "test@example.com",
+  "password": "SecurePass123!",
+  "phone": "+1234567890"
 }
 ```
 
@@ -62,8 +62,8 @@ Since the complete collection is large, let's create requests manually using the
 
 ```json
 {
- "email": "test@example.com",
- "password": "SecurePass123!"
+  "email": "test@example.com",
+  "password": "SecurePass123!"
 }
 ```
 
@@ -72,14 +72,14 @@ Since the complete collection is large, let's create requests manually using the
 
 ```javascript
 if (pm.response.code === 200) {
- var jsonData = pm.response.json();
- if (jsonData.accessToken) {
-   pm.environment.set("accessToken", jsonData.accessToken);
- }
- if (jsonData.refreshToken) {
-   pm.environment.set("refreshToken", jsonData.refreshToken);
- }
- console.log("✅ Logged in! Token saved.");
+  var jsonData = pm.response.json();
+  if (jsonData.accessToken) {
+    pm.environment.set("accessToken", jsonData.accessToken);
+  }
+  if (jsonData.refreshToken) {
+    pm.environment.set("refreshToken", jsonData.refreshToken);
+  }
+  console.log("✅ Logged in! Token saved.");
 }
 ```
 
@@ -157,10 +157,10 @@ Add this to Collection's Pre-request Script:
 // Auto-set authorization header if token exists
 const token = pm.environment.get("accessToken");
 if (token && !pm.request.auth) {
- pm.request.headers.add({
-   key: "Authorization",
-   value: "Bearer " + token,
- });
+  pm.request.headers.add({
+    key: "Authorization",
+    value: "Bearer " + token,
+  });
 }
 ```
 
@@ -269,13 +269,13 @@ In Postman:
 
 ```json
 {
- "name": "John Doe",
- "email": "john@example.com",
- "phone": "+1234567890",
- "message": "I need a consultation",
- "bookingDate": "2025-11-01T10:00:00Z",
- "subject": "Project Discussion",
- "address": "123 Main St"
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "message": "I need a consultation",
+  "bookingDate": "2025-11-01T10:00:00Z",
+  "subject": "Project Discussion",
+  "address": "123 Main St"
 }
 ```
 
@@ -309,13 +309,13 @@ Add to Tests tab:
 ```javascript
 // Save project ID from response
 if (pm.response.code === 201) {
- var jsonData = pm.response.json();
- if (jsonData.id) {
-   pm.environment.set("projectId", jsonData.id);
- }
- if (jsonData.projectSlug) {
-   pm.environment.set("projectSlug", jsonData.projectSlug);
- }
+  var jsonData = pm.response.json();
+  if (jsonData.id) {
+    pm.environment.set("projectId", jsonData.id);
+  }
+  if (jsonData.projectSlug) {
+    pm.environment.set("projectSlug", jsonData.projectSlug);
+  }
 }
 ```
 
@@ -371,9 +371,9 @@ Postman has built-in variables:
 
 ```json
 {
- "username": "user{{$randomInt}}",
- "email": "test{{$timestamp}}@example.com",
- "phone": "+1{{$randomInt}}"
+  "username": "user{{$randomInt}}",
+  "email": "test{{$timestamp}}@example.com",
+  "phone": "+1{{$randomInt}}"
 }
 ```
 

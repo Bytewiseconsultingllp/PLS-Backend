@@ -16,7 +16,16 @@ freeLancerRouter
   .post(
     validateDataMiddleware(freeLancerSchema),
     (req, res, next) =>
-      rateLimiterMiddleware.handle(req, res, next, 10, undefined, 10, 300),
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        undefined,
+        1,
+        5,
+        "freelancer_join",
+      ),
     freeLancerController.getFreeLancerJoinUsRequest,
   );
 freeLancerRouter
@@ -166,7 +175,16 @@ freeLancerRouter
   .post(
     validateDataMiddleware(freelancerRegistrationSchema),
     (req, res, next) =>
-      rateLimiterMiddleware.handle(req, res, next, 5, undefined, 10, 300),
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        undefined,
+        1,
+        5,
+        "freelancer_register",
+      ),
     freelancerRegistrationController.registerFreelancer,
   );
 

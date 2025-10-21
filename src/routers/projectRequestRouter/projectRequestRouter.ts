@@ -14,7 +14,16 @@ const projectRequestRouter = Router();
 projectRequestRouter.route("/create").post(
   // validateDataMiddleware(projectRequestSchema),
   (req, res, next) =>
-    rateLimiterMiddleware.handle(req, res, next, 10, undefined, 10, 300),
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      undefined,
+      1,
+      5,
+      "project_request",
+    ),
   ProjectRequestController.create,
 );
 projectRequestRouter

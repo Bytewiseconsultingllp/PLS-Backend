@@ -17,6 +17,12 @@ const config = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY as string,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET as string,
+  // Rate limiter whitelist IPs (optional, comma-separated)
+  RATE_LIMIT_WHITELIST_IPS: process.env.RATE_LIMIT_WHITELIST_IPS
+    ? process.env.RATE_LIMIT_WHITELIST_IPS.split(",").map((ip) => ip.trim())
+    : [],
+  // Enable rate limiting in development mode for testing
+  ENABLE_RATE_LIMIT_IN_DEV: process.env.ENABLE_RATE_LIMIT_IN_DEV === "true",
 };
 export const {
   PORT,
@@ -32,4 +38,6 @@ export const {
   STRIPE_SECRET_KEY,
   STRIPE_PUBLISHABLE_KEY,
   STRIPE_WEBHOOK_SECRET,
+  RATE_LIMIT_WHITELIST_IPS,
+  ENABLE_RATE_LIMIT_IN_DEV,
 } = config;

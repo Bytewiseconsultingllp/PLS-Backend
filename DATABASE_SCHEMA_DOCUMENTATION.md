@@ -23,6 +23,7 @@
 ## Enums
 
 ### Role
+
 ```typescript
 enum Role {
   CLIENT
@@ -33,6 +34,7 @@ enum Role {
 ```
 
 ### KPIRANK
+
 ```typescript
 enum KPIRANK {
   BRONZE
@@ -47,6 +49,7 @@ enum KPIRANK {
 ```
 
 ### PROJECT_STATUS
+
 ```typescript
 enum PROJECT_STATUS {
   CANCELLED    // project has been cancelled
@@ -57,6 +60,7 @@ enum PROJECT_STATUS {
 ```
 
 ### DIFFICULTY_LEVEL
+
 ```typescript
 enum DIFFICULTY_LEVEL {
   EASY
@@ -66,6 +70,7 @@ enum DIFFICULTY_LEVEL {
 ```
 
 ### PROJECT_TYPE
+
 ```typescript
 enum PROJECT_TYPE {
   INHOUSE
@@ -74,6 +79,7 @@ enum PROJECT_TYPE {
 ```
 
 ### consultationStatus
+
 ```typescript
 enum consultationStatus {
   PENDING
@@ -83,6 +89,7 @@ enum consultationStatus {
 ```
 
 ### PaymentStatus
+
 ```typescript
 enum PaymentStatus {
   PENDING
@@ -94,6 +101,7 @@ enum PaymentStatus {
 ```
 
 ### PaymentMethod
+
 ```typescript
 enum PaymentMethod {
   CARD
@@ -107,37 +115,39 @@ enum PaymentMethod {
 ## Core Tables
 
 ### User
+
 Primary user table for authentication and user management.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| uid | String | @id, @default(cuid()) | Primary key |
-| username | String | @unique | Unique username |
-| fullName | String | | Full name of user |
-| email | String | @unique | Unique email |
-| password | String | | Hashed password |
-| role | Role | @default(CLIENT) | User role |
-| otpPassword | String? | @unique | OTP for verification |
-| giveModeratorFullAccess | Boolean | @default(false) | Moderator permissions |
-| otpPasswordExpiry | DateTime? | | OTP expiration time |
-| emailVerifiedAt | DateTime? | | Email verification timestamp |
-| phone | String? | @unique | Phone number |
-| tokenVersion | Int | @default(0) | For JWT token invalidation |
-| address | String? | | User address |
-| detail | String? | | Additional details |
-| portfolioUrl | String? | | Portfolio URL |
-| niche | String? | | Specialization area |
-| topProjects | String[] | @default([]) | Top projects array |
-| kpi | Json[] | @default([]) | KPI metrics |
-| kpiHistory | Json[] | @default([]) | Historical KPI data |
-| kpiRank | KPIRANK | @default(BRONZE) | Current KPI rank |
-| kpiRankPoints | Int | @default(0) | Rank points |
-| trashedBy | String? | | Who trashed the user |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
-| updatedAt | DateTime | @updatedAt | Update timestamp |
+| Field                   | Type      | Attributes            | Description                  |
+| ----------------------- | --------- | --------------------- | ---------------------------- |
+| uid                     | String    | @id, @default(cuid()) | Primary key                  |
+| username                | String    | @unique               | Unique username              |
+| fullName                | String    |                       | Full name of user            |
+| email                   | String    | @unique               | Unique email                 |
+| password                | String    |                       | Hashed password              |
+| role                    | Role      | @default(CLIENT)      | User role                    |
+| otpPassword             | String?   | @unique               | OTP for verification         |
+| giveModeratorFullAccess | Boolean   | @default(false)       | Moderator permissions        |
+| otpPasswordExpiry       | DateTime? |                       | OTP expiration time          |
+| emailVerifiedAt         | DateTime? |                       | Email verification timestamp |
+| phone                   | String?   | @unique               | Phone number                 |
+| tokenVersion            | Int       | @default(0)           | For JWT token invalidation   |
+| address                 | String?   |                       | User address                 |
+| detail                  | String?   |                       | Additional details           |
+| portfolioUrl            | String?   |                       | Portfolio URL                |
+| niche                   | String?   |                       | Specialization area          |
+| topProjects             | String[]  | @default([])          | Top projects array           |
+| kpi                     | Json[]    | @default([])          | KPI metrics                  |
+| kpiHistory              | Json[]    | @default([])          | Historical KPI data          |
+| kpiRank                 | KPIRANK   | @default(BRONZE)      | Current KPI rank             |
+| kpiRankPoints           | Int       | @default(0)           | Rank points                  |
+| trashedBy               | String?   |                       | Who trashed the user         |
+| trashedAt               | DateTime? |                       | Trash timestamp              |
+| createdAt               | DateTime  | @default(now())       | Creation timestamp           |
+| updatedAt               | DateTime  | @updatedAt            | Update timestamp             |
 
 **Relations:**
+
 - `createdProjects` → Project[] (one-to-many)
 - `projects` → Project[] (many-to-many - InterestedFreelancers)
 - `selectedProjects` → Project[] (many-to-many - SelectedFreelancers)
@@ -153,31 +163,33 @@ Primary user table for authentication and user management.
 ## Project Tables
 
 ### Project
+
 Main project management table.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| title | String | @unique | Project title |
-| projectSlug | String | @unique | URL slug |
-| detail | String | | Project details |
-| niche | String | | Project niche/category |
-| bounty | Int | | Project reward amount |
-| deadline | DateTime | | Project deadline |
-| progressPercentage | Int | @default(0) | Progress (0-100) |
-| difficultyLevel | DIFFICULTY_LEVEL | @default(EASY) | Difficulty level |
-| projectStatus | PROJECT_STATUS | @default(PENDING) | Current status |
-| isDeadlineNeedToBeExtend | Boolean | @default(false) | Extension needed flag |
-| commentByClientAfterProjectCompletion | String? | | Client feedback |
-| starsByClientAfterProjectCompletion | Int? | | Client rating |
-| projectCompletedOn | DateTime? | | Completion timestamp |
-| projectType | PROJECT_TYPE | @default(INHOUSE) | Project type |
-| clientWhoPostedThisProjectForeignId | String? | | Foreign key to User |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field                                 | Type             | Attributes                     | Description            |
+| ------------------------------------- | ---------------- | ------------------------------ | ---------------------- |
+| id                                    | Int              | @id, @default(autoincrement()) | Primary key            |
+| title                                 | String           | @unique                        | Project title          |
+| projectSlug                           | String           | @unique                        | URL slug               |
+| detail                                | String           |                                | Project details        |
+| niche                                 | String           |                                | Project niche/category |
+| bounty                                | Int              |                                | Project reward amount  |
+| deadline                              | DateTime         |                                | Project deadline       |
+| progressPercentage                    | Int              | @default(0)                    | Progress (0-100)       |
+| difficultyLevel                       | DIFFICULTY_LEVEL | @default(EASY)                 | Difficulty level       |
+| projectStatus                         | PROJECT_STATUS   | @default(PENDING)              | Current status         |
+| isDeadlineNeedToBeExtend              | Boolean          | @default(false)                | Extension needed flag  |
+| commentByClientAfterProjectCompletion | String?          |                                | Client feedback        |
+| starsByClientAfterProjectCompletion   | Int?             |                                | Client rating          |
+| projectCompletedOn                    | DateTime?        |                                | Completion timestamp   |
+| projectType                           | PROJECT_TYPE     | @default(INHOUSE)              | Project type           |
+| clientWhoPostedThisProjectForeignId   | String?          |                                | Foreign key to User    |
+| trashedBy                             | String?          |                                | Who trashed            |
+| trashedAt                             | DateTime?        |                                | Trash timestamp        |
+| createdAt                             | DateTime         | @default(now())                | Creation timestamp     |
 
 **Relations:**
+
 - `clientWhoPostedThisProject` → User (many-to-one)
 - `milestones` → Milestone[] (one-to-many)
 - `interestedFreelancers` → User[] (many-to-many)
@@ -188,22 +200,24 @@ Main project management table.
 ---
 
 ### Milestone
+
 Project milestones for tracking progress.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| mileStoneName | String | @unique | Milestone name |
-| description | String? | | Milestone description |
-| deadline | DateTime | | Milestone deadline |
-| progress | Int | @default(0) | Current progress |
-| totalProgressPoints | Int | | Total points needed |
-| projectId | Int | | Foreign key to Project |
-| priorityRank | Int | | Priority ranking |
-| isMilestoneCompleted | Boolean | @default(false) | Completion flag |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field                | Type     | Attributes                     | Description            |
+| -------------------- | -------- | ------------------------------ | ---------------------- |
+| id                   | Int      | @id, @default(autoincrement()) | Primary key            |
+| mileStoneName        | String   | @unique                        | Milestone name         |
+| description          | String?  |                                | Milestone description  |
+| deadline             | DateTime |                                | Milestone deadline     |
+| progress             | Int      | @default(0)                    | Current progress       |
+| totalProgressPoints  | Int      |                                | Total points needed    |
+| projectId            | Int      |                                | Foreign key to Project |
+| priorityRank         | Int      |                                | Priority ranking       |
+| isMilestoneCompleted | Boolean  | @default(false)                | Completion flag        |
+| createdAt            | DateTime | @default(now())                | Creation timestamp     |
 
 **Relations:**
+
 - `project` → Project (many-to-one, onDelete: Cascade)
 
 **Indexes:** id, projectId, priorityRank, mileStoneName, deadline, progress, createdAt
@@ -211,31 +225,33 @@ Project milestones for tracking progress.
 ---
 
 ### ProjectBuilder
+
 Project builder/planner table.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| projectName | String | | Project name |
-| projectDescription | String | | Description |
-| projectType | String | | Type of project |
-| technologies | String[] | | Technology stack |
-| features | String[] | | Feature list |
-| budget | Int? | | Budget amount |
-| timeline | String? | | Timeline info |
-| priority | String | @default("MEDIUM") | Priority level |
-| status | String | @default("DRAFT") | Current status |
-| clientName | String | | Client name |
-| clientEmail | String | | Client email |
-| clientPhone | String? | | Client phone |
-| clientCompany | String? | | Company name |
-| additionalNotes | String? | | Additional notes |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
-| updatedAt | DateTime | @updatedAt | Update timestamp |
+| Field              | Type      | Attributes            | Description        |
+| ------------------ | --------- | --------------------- | ------------------ |
+| id                 | String    | @id, @default(uuid()) | Primary key        |
+| projectName        | String    |                       | Project name       |
+| projectDescription | String    |                       | Description        |
+| projectType        | String    |                       | Type of project    |
+| technologies       | String[]  |                       | Technology stack   |
+| features           | String[]  |                       | Feature list       |
+| budget             | Int?      |                       | Budget amount      |
+| timeline           | String?   |                       | Timeline info      |
+| priority           | String    | @default("MEDIUM")    | Priority level     |
+| status             | String    | @default("DRAFT")     | Current status     |
+| clientName         | String    |                       | Client name        |
+| clientEmail        | String    |                       | Client email       |
+| clientPhone        | String?   |                       | Client phone       |
+| clientCompany      | String?   |                       | Company name       |
+| additionalNotes    | String?   |                       | Additional notes   |
+| trashedBy          | String?   |                       | Who trashed        |
+| trashedAt          | DateTime? |                       | Trash timestamp    |
+| createdAt          | DateTime  | @default(now())       | Creation timestamp |
+| updatedAt          | DateTime  | @updatedAt            | Update timestamp   |
 
 **Relations:**
+
 - `interestedFreelancers` → User[] (many-to-many)
 - `selectedFreelancers` → User[] (many-to-many)
 
@@ -244,44 +260,46 @@ Project builder/planner table.
 ---
 
 ### ProjectRequest
+
 Complete project request submission with all details.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| userId | String? | | Foreign key to User |
-| fullName | String | | Client full name |
-| businessEmail | String | | Business email |
-| phoneNumber | String? | | Phone number |
-| companyName | String? | | Company name |
-| companyWebsite | String? | | Company website |
-| businessAddress | String? | | Business address |
-| businessType | String? | | Type of business |
-| referralSource | String? | | How they found us |
-| stripeCheckOutUrl | String? | | Stripe checkout URL |
-| paymentIntentId | String? | | Payment intent ID |
-| appliedDiscount | Int? | | Discount amount |
-| timeline | String? | | Project timeline |
-| paymentMethod | String? | | Payment method |
-| estimateAccepted | Boolean | @default(false) | Estimate accepted |
-| comparisonVisible | Boolean | @default(false) | Show comparison |
-| estimateFinalPriceMin | Int? | | Min final price |
-| estimateFinalPriceMax | Int? | | Max final price |
-| estimateBasePriceMin | Int? | | Min base price |
-| estimateBasePriceMax | Int? | | Max base price |
-| discountPercentage | Int? | | Discount percentage |
-| discountAmountMin | Int? | | Min discount amount |
-| discountAmountMax | Int? | | Max discount amount |
-| rushFeePercentage | Int? | | Rush fee percentage |
-| rushFeeAmountMin | Int? | | Min rush fee |
-| rushFeeAmountMax | Int? | | Max rush fee |
-| agreementAccepted | Boolean | @default(false) | Agreement status |
-| selectedOption | String? | | Selected option |
-| completed | Boolean | @default(false) | Request completed |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
-| updatedAt | DateTime | @updatedAt | Update timestamp |
+| Field                 | Type     | Attributes            | Description         |
+| --------------------- | -------- | --------------------- | ------------------- |
+| id                    | String   | @id, @default(uuid()) | Primary key         |
+| userId                | String?  |                       | Foreign key to User |
+| fullName              | String   |                       | Client full name    |
+| businessEmail         | String   |                       | Business email      |
+| phoneNumber           | String?  |                       | Phone number        |
+| companyName           | String?  |                       | Company name        |
+| companyWebsite        | String?  |                       | Company website     |
+| businessAddress       | String?  |                       | Business address    |
+| businessType          | String?  |                       | Type of business    |
+| referralSource        | String?  |                       | How they found us   |
+| stripeCheckOutUrl     | String?  |                       | Stripe checkout URL |
+| paymentIntentId       | String?  |                       | Payment intent ID   |
+| appliedDiscount       | Int?     |                       | Discount amount     |
+| timeline              | String?  |                       | Project timeline    |
+| paymentMethod         | String?  |                       | Payment method      |
+| estimateAccepted      | Boolean  | @default(false)       | Estimate accepted   |
+| comparisonVisible     | Boolean  | @default(false)       | Show comparison     |
+| estimateFinalPriceMin | Int?     |                       | Min final price     |
+| estimateFinalPriceMax | Int?     |                       | Max final price     |
+| estimateBasePriceMin  | Int?     |                       | Min base price      |
+| estimateBasePriceMax  | Int?     |                       | Max base price      |
+| discountPercentage    | Int?     |                       | Discount percentage |
+| discountAmountMin     | Int?     |                       | Min discount amount |
+| discountAmountMax     | Int?     |                       | Max discount amount |
+| rushFeePercentage     | Int?     |                       | Rush fee percentage |
+| rushFeeAmountMin      | Int?     |                       | Min rush fee        |
+| rushFeeAmountMax      | Int?     |                       | Max rush fee        |
+| agreementAccepted     | Boolean  | @default(false)       | Agreement status    |
+| selectedOption        | String?  |                       | Selected option     |
+| completed             | Boolean  | @default(false)       | Request completed   |
+| createdAt             | DateTime | @default(now())       | Creation timestamp  |
+| updatedAt             | DateTime | @updatedAt            | Update timestamp    |
 
 **Relations:**
+
 - `user` → User (many-to-one)
 - `services` → Service[] (one-to-many)
 - `industries` → Industry[] (one-to-many)
@@ -291,61 +309,69 @@ Complete project request submission with all details.
 ---
 
 ### Service
+
 Services selected in project request.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| submissionId | String | | Foreign key to ProjectRequest |
-| category | String | | Service category |
-| service | String | | Service name |
+| Field        | Type   | Attributes            | Description                   |
+| ------------ | ------ | --------------------- | ----------------------------- |
+| id           | String | @id, @default(uuid()) | Primary key                   |
+| submissionId | String |                       | Foreign key to ProjectRequest |
+| category     | String |                       | Service category              |
+| service      | String |                       | Service name                  |
 
 **Relations:**
+
 - `submission` → ProjectRequest (many-to-one)
 
 ---
 
 ### Industry
+
 Industries selected in project request.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| submissionId | String | | Foreign key to ProjectRequest |
-| category | String | | Industry category |
-| industry | String | | Industry name |
+| Field        | Type   | Attributes            | Description                   |
+| ------------ | ------ | --------------------- | ----------------------------- |
+| id           | String | @id, @default(uuid()) | Primary key                   |
+| submissionId | String |                       | Foreign key to ProjectRequest |
+| category     | String |                       | Industry category             |
+| industry     | String |                       | Industry name                 |
 
 **Relations:**
+
 - `submission` → ProjectRequest (many-to-one)
 
 ---
 
 ### Technology
+
 Technologies selected in project request.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| submissionId | String | | Foreign key to ProjectRequest |
-| category | String | | Technology category |
-| technology | String | | Technology name |
+| Field        | Type   | Attributes            | Description                   |
+| ------------ | ------ | --------------------- | ----------------------------- |
+| id           | String | @id, @default(uuid()) | Primary key                   |
+| submissionId | String |                       | Foreign key to ProjectRequest |
+| category     | String |                       | Technology category           |
+| technology   | String |                       | Technology name               |
 
 **Relations:**
+
 - `submission` → ProjectRequest (many-to-one)
 
 ---
 
 ### Feature
+
 Features selected in project request.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| submissionId | String | | Foreign key to ProjectRequest |
-| category | String | | Feature category |
-| feature | String | | Feature name |
+| Field        | Type   | Attributes            | Description                   |
+| ------------ | ------ | --------------------- | ----------------------------- |
+| id           | String | @id, @default(uuid()) | Primary key                   |
+| submissionId | String |                       | Foreign key to ProjectRequest |
+| category     | String |                       | Feature category              |
+| feature      | String |                       | Feature name                  |
 
 **Relations:**
+
 - `submission` → ProjectRequest (many-to-one)
 
 ---
@@ -353,63 +379,67 @@ Features selected in project request.
 ## Freelancer Tables
 
 ### FreeLancersRequest
+
 Freelancer join requests.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| name | String | | Freelancer name |
-| email | String | @unique | Email address |
-| phone | String | @unique | Phone number |
-| address | String | | Address |
-| detail | String | | Details/bio |
-| yourPortfolio | String | | Portfolio URL |
-| niche | String | | Specialization |
-| yourTopProject1 | String | | Top project 1 |
-| yourTopProject2 | String | | Top project 2 |
-| yourTopProject3 | String | | Top project 3 |
-| isAccepted | Boolean | @default(false) | Accepted status |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field           | Type      | Attributes                     | Description        |
+| --------------- | --------- | ------------------------------ | ------------------ |
+| id              | Int       | @id, @default(autoincrement()) | Primary key        |
+| name            | String    |                                | Freelancer name    |
+| email           | String    | @unique                        | Email address      |
+| phone           | String    | @unique                        | Phone number       |
+| address         | String    |                                | Address            |
+| detail          | String    |                                | Details/bio        |
+| yourPortfolio   | String    |                                | Portfolio URL      |
+| niche           | String    |                                | Specialization     |
+| yourTopProject1 | String    |                                | Top project 1      |
+| yourTopProject2 | String    |                                | Top project 2      |
+| yourTopProject3 | String    |                                | Top project 3      |
+| isAccepted      | Boolean   | @default(false)                | Accepted status    |
+| trashedBy       | String?   |                                | Who trashed        |
+| trashedAt       | DateTime? |                                | Trash timestamp    |
+| createdAt       | DateTime  | @default(now())                | Creation timestamp |
 
 **Indexes:** id, email, phone, createdAt, trashedAt, trashedBy
 
 ---
 
 ### NichesForFreelancers
+
 Available niches/specializations.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| niche | String | | Niche name |
+| Field | Type   | Attributes                     | Description |
+| ----- | ------ | ------------------------------ | ----------- |
+| id    | Int    | @id, @default(autoincrement()) | Primary key |
+| niche | String |                                | Niche name  |
 
 ---
 
 ### Profile
+
 Comprehensive freelancer profile.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| userId | String? | | Related user ID |
-| whoYouAreId | String | @unique | Who you are section |
-| coreRoleId | String? | @unique | Core role section |
-| eliteSkillCardsId | String? | @unique | Elite skills section |
-| toolstackProficiencyId | String? | @unique | Tools section |
-| domainExperienceId | String? | @unique | Domain experience |
-| industryExperienceId | String? | @unique | Industry experience |
-| availabilityWorkflowId | String? | @unique | Availability section |
-| softSkillsId | String? | @unique | Soft skills section |
-| certificationsId | String? | @unique | Certifications section |
-| projectQuotingId | String? | @unique | Project quoting section |
-| legalAgreementsId | String? | @unique | Legal agreements |
-| isAccepted | Boolean | @default(false) | Profile accepted |
-| trashedAt | DateTime? | | Trash timestamp |
-| trashedBy | String? | | Who trashed |
+| Field                  | Type      | Attributes            | Description             |
+| ---------------------- | --------- | --------------------- | ----------------------- |
+| id                     | String    | @id, @default(uuid()) | Primary key             |
+| userId                 | String?   |                       | Related user ID         |
+| whoYouAreId            | String    | @unique               | Who you are section     |
+| coreRoleId             | String?   | @unique               | Core role section       |
+| eliteSkillCardsId      | String?   | @unique               | Elite skills section    |
+| toolstackProficiencyId | String?   | @unique               | Tools section           |
+| domainExperienceId     | String?   | @unique               | Domain experience       |
+| industryExperienceId   | String?   | @unique               | Industry experience     |
+| availabilityWorkflowId | String?   | @unique               | Availability section    |
+| softSkillsId           | String?   | @unique               | Soft skills section     |
+| certificationsId       | String?   | @unique               | Certifications section  |
+| projectQuotingId       | String?   | @unique               | Project quoting section |
+| legalAgreementsId      | String?   | @unique               | Legal agreements        |
+| isAccepted             | Boolean   | @default(false)       | Profile accepted        |
+| trashedAt              | DateTime? |                       | Trash timestamp         |
+| trashedBy              | String?   |                       | Who trashed             |
 
 **Relations:**
+
 - `whoYouAre` → WhoYouAre (one-to-one)
 - `coreRole` → CoreRole (one-to-one)
 - `eliteSkillCards` → EliteSkillCards (one-to-one)
@@ -425,165 +455,187 @@ Comprehensive freelancer profile.
 ---
 
 ### WhoYouAre
+
 Freelancer personal information.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| fullName | String | | Full name |
-| email | String | @unique | Email address |
-| timeZone | String | | Time zone |
-| country | String? | | Country |
-| professionalLinks | Json | | Professional links |
-| phone | String? | | Phone number |
+| Field             | Type    | Attributes            | Description        |
+| ----------------- | ------- | --------------------- | ------------------ |
+| id                | String  | @id, @default(uuid()) | Primary key        |
+| fullName          | String  |                       | Full name          |
+| email             | String  | @unique               | Email address      |
+| timeZone          | String  |                       | Time zone          |
+| country           | String? |                       | Country            |
+| professionalLinks | Json    |                       | Professional links |
+| phone             | String? |                       | Phone number       |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### CoreRole
+
 Freelancer primary domain/role.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| primaryDomain | String | | Primary domain |
+| Field         | Type   | Attributes            | Description    |
+| ------------- | ------ | --------------------- | -------------- |
+| id            | String | @id, @default(uuid()) | Primary key    |
+| primaryDomain | String |                       | Primary domain |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### EliteSkillCards
+
 Freelancer elite skills.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| selectedSkills | Json | | Skills array |
+| Field          | Type   | Attributes            | Description  |
+| -------------- | ------ | --------------------- | ------------ |
+| id             | String | @id, @default(uuid()) | Primary key  |
+| selectedSkills | Json   |                       | Skills array |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### ToolstackProficiency
+
 Freelancer tools and technologies.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| selectedTools | Json | | Tools array |
+| Field         | Type   | Attributes            | Description |
+| ------------- | ------ | --------------------- | ----------- |
+| id            | String | @id, @default(uuid()) | Primary key |
+| selectedTools | Json   |                       | Tools array |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### DomainExperience
+
 Freelancer domain experience.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| roles | Json | | Roles array |
+| Field | Type   | Attributes            | Description |
+| ----- | ------ | --------------------- | ----------- |
+| id    | String | @id, @default(uuid()) | Primary key |
+| roles | Json   |                       | Roles array |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### IndustryExperience
+
 Freelancer industry experience.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| selectedIndustries | Json | | Industries array |
+| Field              | Type   | Attributes            | Description      |
+| ------------------ | ------ | --------------------- | ---------------- |
+| id                 | String | @id, @default(uuid()) | Primary key      |
+| selectedIndustries | Json   |                       | Industries array |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### AvailabilityWorkflow
+
 Freelancer availability and workflow.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| weeklyCommitment | Int | | Hours per week |
-| workingHours | Json | | Working hours |
-| collaborationTools | Json | | Collaboration tools |
-| teamStyle | String | | Team style preference |
-| screenSharing | String | | Screen sharing preference |
-| availabilityExceptions | String | | Exceptions |
+| Field                  | Type   | Attributes            | Description               |
+| ---------------------- | ------ | --------------------- | ------------------------- |
+| id                     | String | @id, @default(uuid()) | Primary key               |
+| weeklyCommitment       | Int    |                       | Hours per week            |
+| workingHours           | Json   |                       | Working hours             |
+| collaborationTools     | Json   |                       | Collaboration tools       |
+| teamStyle              | String |                       | Team style preference     |
+| screenSharing          | String |                       | Screen sharing preference |
+| availabilityExceptions | String |                       | Exceptions                |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### SoftSkills
+
 Freelancer soft skills.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| collaborationStyle | String | | Collaboration style |
-| communicationFrequency | String | | Communication frequency |
-| conflictResolution | String | | Conflict resolution |
-| languages | Json | | Languages spoken |
-| teamVsSolo | String | | Team vs solo preference |
+| Field                  | Type   | Attributes            | Description             |
+| ---------------------- | ------ | --------------------- | ----------------------- |
+| id                     | String | @id, @default(uuid()) | Primary key             |
+| collaborationStyle     | String |                       | Collaboration style     |
+| communicationFrequency | String |                       | Communication frequency |
+| conflictResolution     | String |                       | Conflict resolution     |
+| languages              | Json   |                       | Languages spoken        |
+| teamVsSolo             | String |                       | Team vs solo preference |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### Certifications
+
 Freelancer certifications.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| certificates | Json | | Certificates array |
+| Field        | Type   | Attributes            | Description        |
+| ------------ | ------ | --------------------- | ------------------ |
+| id           | String | @id, @default(uuid()) | Primary key        |
+| certificates | Json   |                       | Certificates array |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### ProjectQuoting
+
 Freelancer pricing information.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| compensationPreference | String | | Compensation type |
-| smallProjectPrice | Int | | Small project price |
-| midProjectPrice | Int | | Medium project price |
-| longTermPrice | Int | | Long term price |
-| milestoneTerms | String | | Milestone terms |
-| willSubmitProposals | String | | Proposal preference |
+| Field                  | Type   | Attributes            | Description          |
+| ---------------------- | ------ | --------------------- | -------------------- |
+| id                     | String | @id, @default(uuid()) | Primary key          |
+| compensationPreference | String |                       | Compensation type    |
+| smallProjectPrice      | Int    |                       | Small project price  |
+| midProjectPrice        | Int    |                       | Medium project price |
+| longTermPrice          | Int    |                       | Long term price      |
+| milestoneTerms         | String |                       | Milestone terms      |
+| willSubmitProposals    | String |                       | Proposal preference  |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 
 ---
 
 ### LegalAgreements
+
 Freelancer legal agreements.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| agreements | Json | | Agreements array |
-| identityVerificationId | String? | @unique | Identity verification |
-| workAuthorizationId | String? | @unique | Work authorization |
+| Field                  | Type    | Attributes            | Description           |
+| ---------------------- | ------- | --------------------- | --------------------- |
+| id                     | String  | @id, @default(uuid()) | Primary key           |
+| agreements             | Json    |                       | Agreements array      |
+| identityVerificationId | String? | @unique               | Identity verification |
+| workAuthorizationId    | String? | @unique               | Work authorization    |
 
 **Relations:**
+
 - `profile` → Profile (one-to-one)
 - `identityVerification` → IdentityVerification (one-to-one)
 - `workAuthorization` → WorkAuthorization (one-to-one)
@@ -591,29 +643,33 @@ Freelancer legal agreements.
 ---
 
 ### IdentityVerification
+
 Identity verification details.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| idType | String | | ID type |
-| taxDocType | String | | Tax document type |
-| addressVerified | Boolean | | Address verified |
+| Field           | Type    | Attributes            | Description       |
+| --------------- | ------- | --------------------- | ----------------- |
+| id              | String  | @id, @default(uuid()) | Primary key       |
+| idType          | String  |                       | ID type           |
+| taxDocType      | String  |                       | Tax document type |
+| addressVerified | Boolean |                       | Address verified  |
 
 **Relations:**
+
 - `legalAgreements` → LegalAgreements (one-to-one)
 
 ---
 
 ### WorkAuthorization
+
 Work authorization details.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| interested | Boolean | | Interested in work |
+| Field      | Type    | Attributes            | Description        |
+| ---------- | ------- | --------------------- | ------------------ |
+| id         | String  | @id, @default(uuid()) | Primary key        |
+| interested | Boolean |                       | Interested in work |
 
 **Relations:**
+
 - `legalAgreements` → LegalAgreements (one-to-one)
 
 ---
@@ -621,98 +677,103 @@ Work authorization details.
 ## Business Request Tables
 
 ### GetQuote
+
 Quote requests from clients.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| name | String | | Client name |
-| email | String | | Email address |
-| phone | String | | Phone number |
-| company | String? | @default("") | Company name |
-| address | String | | Address |
-| deadline | String? | | Preferred deadline |
-| services | String | | Services needed |
-| detail | String? | @default("") | Additional details |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field     | Type      | Attributes                     | Description        |
+| --------- | --------- | ------------------------------ | ------------------ |
+| id        | Int       | @id, @default(autoincrement()) | Primary key        |
+| name      | String    |                                | Client name        |
+| email     | String    |                                | Email address      |
+| phone     | String    |                                | Phone number       |
+| company   | String?   | @default("")                   | Company name       |
+| address   | String    |                                | Address            |
+| deadline  | String?   |                                | Preferred deadline |
+| services  | String    |                                | Services needed    |
+| detail    | String?   | @default("")                   | Additional details |
+| trashedBy | String?   |                                | Who trashed        |
+| trashedAt | DateTime? |                                | Trash timestamp    |
+| createdAt | DateTime  | @default(now())                | Creation timestamp |
 
 **Indexes:** id, email, createdAt, trashedAt, trashedBy
 
 ---
 
 ### CreateServicesForQuote
+
 Available services for quotes.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| services | String | | Service name |
+| Field    | Type   | Attributes                     | Description  |
+| -------- | ------ | ------------------------------ | ------------ |
+| id       | Int    | @id, @default(autoincrement()) | Primary key  |
+| services | String |                                | Service name |
 
 ---
 
 ### ConsultationBooking
+
 Consultation booking requests.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| name | String | | Client name |
-| email | String | | Email address |
-| phone | String | | Phone number |
-| message | String | | Message |
-| bookingDate | DateTime | @unique | Booking date/time |
-| status | consultationStatus | @default(PENDING) | Booking status |
-| subject | String | | Subject |
-| address | String | | Address |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field       | Type               | Attributes                     | Description        |
+| ----------- | ------------------ | ------------------------------ | ------------------ |
+| id          | Int                | @id, @default(autoincrement()) | Primary key        |
+| name        | String             |                                | Client name        |
+| email       | String             |                                | Email address      |
+| phone       | String             |                                | Phone number       |
+| message     | String             |                                | Message            |
+| bookingDate | DateTime           | @unique                        | Booking date/time  |
+| status      | consultationStatus | @default(PENDING)              | Booking status     |
+| subject     | String             |                                | Subject            |
+| address     | String             |                                | Address            |
+| trashedBy   | String?            |                                | Who trashed        |
+| trashedAt   | DateTime?          |                                | Trash timestamp    |
+| createdAt   | DateTime           | @default(now())                | Creation timestamp |
 
 **Indexes:** id, email, bookingDate, status, trashedAt, trashedBy
 
 ---
 
 ### HireUs
+
 Hire us requests with documents.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| name | String | | Client name |
-| email | String | | Email address |
-| phone | String | | Phone number |
-| company | String? | @default("") | Company name |
-| address | String | | Address |
-| detail | String | | Project details |
-| docs | Json[] | | Uploaded documents |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field     | Type      | Attributes                     | Description        |
+| --------- | --------- | ------------------------------ | ------------------ |
+| id        | Int       | @id, @default(autoincrement()) | Primary key        |
+| name      | String    |                                | Client name        |
+| email     | String    |                                | Email address      |
+| phone     | String    |                                | Phone number       |
+| company   | String?   | @default("")                   | Company name       |
+| address   | String    |                                | Address            |
+| detail    | String    |                                | Project details    |
+| docs      | Json[]    |                                | Uploaded documents |
+| trashedBy | String?   |                                | Who trashed        |
+| trashedAt | DateTime? |                                | Trash timestamp    |
+| createdAt | DateTime  | @default(now())                | Creation timestamp |
 
 **Indexes:** id, email, createdAt, trashedAt, trashedBy
 
 ---
 
 ### Visitors
+
 Visitor tracking.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| fullName | String | | Full name |
-| businessEmail | String | @unique | Business email |
-| phoneNumber | String? | | Phone number |
-| companyName | String? | | Company name |
-| companyWebsite | String? | | Company website |
-| businessAddress | String | | Business address |
-| businessType | String | | Business type |
-| referralSource | String | | Referral source |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
-| updatedAt | DateTime | @updatedAt | Update timestamp |
+| Field           | Type      | Attributes            | Description        |
+| --------------- | --------- | --------------------- | ------------------ |
+| id              | String    | @id, @default(uuid()) | Primary key        |
+| fullName        | String    |                       | Full name          |
+| businessEmail   | String    | @unique               | Business email     |
+| phoneNumber     | String?   |                       | Phone number       |
+| companyName     | String?   |                       | Company name       |
+| companyWebsite  | String?   |                       | Company website    |
+| businessAddress | String    |                       | Business address   |
+| businessType    | String    |                       | Business type      |
+| referralSource  | String    |                       | Referral source    |
+| trashedBy       | String?   |                       | Who trashed        |
+| trashedAt       | DateTime? |                       | Trash timestamp    |
+| createdAt       | DateTime  | @default(now())       | Creation timestamp |
+| updatedAt       | DateTime  | @updatedAt            | Update timestamp   |
 
 **Indexes:** businessEmail, businessType, referralSource, createdAt, trashedAt, trashedBy
 
@@ -721,69 +782,74 @@ Visitor tracking.
 ## Communication Tables
 
 ### ContactUs
+
 Contact us form submissions.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| firstName | String | | First name |
-| lastName | String | | Last name |
-| email | String | | Email address |
-| message | String | | Message content |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field     | Type      | Attributes                     | Description        |
+| --------- | --------- | ------------------------------ | ------------------ |
+| id        | Int       | @id, @default(autoincrement()) | Primary key        |
+| firstName | String    |                                | First name         |
+| lastName  | String    |                                | Last name          |
+| email     | String    |                                | Email address      |
+| message   | String    |                                | Message content    |
+| trashedBy | String?   |                                | Who trashed        |
+| trashedAt | DateTime? |                                | Trash timestamp    |
+| createdAt | DateTime  | @default(now())                | Creation timestamp |
 
 **Indexes:** id, email, message, createdAt, trashedAt, trashedBy
 
 ---
 
 ### Newsletter
+
 Newsletter subscriptions.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(cuid()) | Primary key |
-| email | String | @unique | Subscriber email |
-| subscriptionStatus | Boolean | @default(true) | Active subscription |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field              | Type     | Attributes            | Description         |
+| ------------------ | -------- | --------------------- | ------------------- |
+| id                 | String   | @id, @default(cuid()) | Primary key         |
+| email              | String   | @unique               | Subscriber email    |
+| subscriptionStatus | Boolean  | @default(true)        | Active subscription |
+| createdAt          | DateTime | @default(now())       | Creation timestamp  |
 
 ---
 
 ### BlogPost
+
 Blog posts.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| blogId | Int | @id, @default(autoincrement()) | Primary key |
-| blogTitle | String | @unique | Blog title |
-| blogSlug | String | @unique | URL slug |
-| blogThumbnail | String | | Thumbnail image |
-| blogOverview | String | | Overview/excerpt |
-| blogBody | String | | Full blog content |
-| isPublished | Boolean | @default(true) | Published status |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
+| Field         | Type     | Attributes                     | Description        |
+| ------------- | -------- | ------------------------------ | ------------------ |
+| blogId        | Int      | @id, @default(autoincrement()) | Primary key        |
+| blogTitle     | String   | @unique                        | Blog title         |
+| blogSlug      | String   | @unique                        | URL slug           |
+| blogThumbnail | String   |                                | Thumbnail image    |
+| blogOverview  | String   |                                | Overview/excerpt   |
+| blogBody      | String   |                                | Full blog content  |
+| isPublished   | Boolean  | @default(true)                 | Published status   |
+| createdAt     | DateTime | @default(now())                | Creation timestamp |
 
 **Indexes:** blogId, blogTitle, blogSlug, blogBody, createdAt
 
 ---
 
 ### MenuItem
+
 Navigation menu items with hierarchical structure.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | Int | @id, @default(autoincrement()) | Primary key |
-| title | String | | Menu title |
-| description | String? | | Description |
-| slug | String | @unique | URL slug |
-| href | String? | | Link URL |
-| image | String? | | Menu image |
-| parentId | Int? | | Parent menu item |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
+| Field       | Type      | Attributes                     | Description      |
+| ----------- | --------- | ------------------------------ | ---------------- |
+| id          | Int       | @id, @default(autoincrement()) | Primary key      |
+| title       | String    |                                | Menu title       |
+| description | String?   |                                | Description      |
+| slug        | String    | @unique                        | URL slug         |
+| href        | String?   |                                | Link URL         |
+| image       | String?   |                                | Menu image       |
+| parentId    | Int?      |                                | Parent menu item |
+| trashedBy   | String?   |                                | Who trashed      |
+| trashedAt   | DateTime? |                                | Trash timestamp  |
 
 **Relations:**
+
 - `parent` → MenuItem (self-reference, one-to-many)
 - `children` → MenuItem[] (self-reference, one-to-many)
 
@@ -794,32 +860,34 @@ Navigation menu items with hierarchical structure.
 ## Payment Tables
 
 ### Payment
+
 Payment transactions.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| id | String | @id, @default(uuid()) | Primary key |
-| userId | String? | | Foreign key to User |
-| stripePaymentIntentId | String? | @unique | Stripe payment intent |
-| stripeSessionId | String? | @unique | Stripe session ID |
-| stripeCustomerId | String? | | Stripe customer ID |
-| amount | Int | | Amount in cents |
-| currency | String | @default("usd") | Currency code |
-| status | PaymentStatus | @default(PENDING) | Payment status |
-| paymentMethod | PaymentMethod | @default(CARD) | Payment method |
-| clientEmail | String | | Client email |
-| clientName | String? | | Client name |
-| clientPhone | String? | | Client phone |
-| description | String? | | Payment description |
-| metadata | Json? | | Additional metadata |
-| paidAt | DateTime? | | Payment timestamp |
-| refundedAt | DateTime? | | Refund timestamp |
-| trashedBy | String? | | Who trashed |
-| trashedAt | DateTime? | | Trash timestamp |
-| createdAt | DateTime | @default(now()) | Creation timestamp |
-| updatedAt | DateTime | @updatedAt | Update timestamp |
+| Field                 | Type          | Attributes            | Description           |
+| --------------------- | ------------- | --------------------- | --------------------- |
+| id                    | String        | @id, @default(uuid()) | Primary key           |
+| userId                | String?       |                       | Foreign key to User   |
+| stripePaymentIntentId | String?       | @unique               | Stripe payment intent |
+| stripeSessionId       | String?       | @unique               | Stripe session ID     |
+| stripeCustomerId      | String?       |                       | Stripe customer ID    |
+| amount                | Int           |                       | Amount in cents       |
+| currency              | String        | @default("usd")       | Currency code         |
+| status                | PaymentStatus | @default(PENDING)     | Payment status        |
+| paymentMethod         | PaymentMethod | @default(CARD)        | Payment method        |
+| clientEmail           | String        |                       | Client email          |
+| clientName            | String?       |                       | Client name           |
+| clientPhone           | String?       |                       | Client phone          |
+| description           | String?       |                       | Payment description   |
+| metadata              | Json?         |                       | Additional metadata   |
+| paidAt                | DateTime?     |                       | Payment timestamp     |
+| refundedAt            | DateTime?     |                       | Refund timestamp      |
+| trashedBy             | String?       |                       | Who trashed           |
+| trashedAt             | DateTime?     |                       | Trash timestamp       |
+| createdAt             | DateTime      | @default(now())       | Creation timestamp    |
+| updatedAt             | DateTime      | @updatedAt            | Update timestamp      |
 
 **Relations:**
+
 - `user` → User (many-to-one)
 
 **Indexes:** userId, stripePaymentIntentId, stripeSessionId, clientEmail, status, createdAt, trashedAt, trashedBy
@@ -829,13 +897,14 @@ Payment transactions.
 ## System Tables
 
 ### RateLimiterFlexible
+
 Rate limiting storage.
 
-| Field | Type | Attributes | Description |
-|-------|------|------------|-------------|
-| key | String | @id | Primary key (IP or identifier) |
-| points | Int | | Request count |
-| expire | DateTime? | | Expiration time |
+| Field  | Type      | Attributes | Description                    |
+| ------ | --------- | ---------- | ------------------------------ |
+| key    | String    | @id        | Primary key (IP or identifier) |
+| points | Int       |            | Request count                  |
+| expire | DateTime? |            | Expiration time                |
 
 ---
 
@@ -850,15 +919,15 @@ erDiagram
     User }o--o{ Project : "selected_for"
     User }o--o{ ProjectBuilder : "interested_in_builder"
     User }o--o{ ProjectBuilder : "selected_for_builder"
-    
+
     Project ||--o{ Milestone : "has"
     Project }o--|| User : "posted_by"
-    
+
     ProjectRequest ||--o{ Service : "includes"
     ProjectRequest ||--o{ Industry : "targets"
     ProjectRequest ||--o{ Technology : "uses"
     ProjectRequest ||--o{ Feature : "requires"
-    
+
     Profile ||--|| WhoYouAre : "has"
     Profile ||--|| CoreRole : "has"
     Profile ||--|| EliteSkillCards : "has"
@@ -870,12 +939,12 @@ erDiagram
     Profile ||--|| Certifications : "has"
     Profile ||--|| ProjectQuoting : "has"
     Profile ||--|| LegalAgreements : "has"
-    
+
     LegalAgreements ||--|| IdentityVerification : "includes"
     LegalAgreements ||--|| WorkAuthorization : "includes"
-    
+
     MenuItem ||--o{ MenuItem : "parent_of"
-    
+
     User {
         string uid PK
         string username UK
@@ -886,7 +955,7 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     Project {
         int id PK
         string title UK
@@ -902,7 +971,7 @@ erDiagram
         string clientWhoPostedThisProjectForeignId FK
         datetime createdAt
     }
-    
+
     Milestone {
         int id PK
         string mileStoneName UK
@@ -915,7 +984,7 @@ erDiagram
         boolean isMilestoneCompleted
         datetime createdAt
     }
-    
+
     ProjectRequest {
         string id PK
         string userId FK
@@ -927,35 +996,35 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     Service {
         string id PK
         string submissionId FK
         string category
         string service
     }
-    
+
     Industry {
         string id PK
         string submissionId FK
         string category
         string industry
     }
-    
+
     Technology {
         string id PK
         string submissionId FK
         string category
         string technology
     }
-    
+
     Feature {
         string id PK
         string submissionId FK
         string category
         string feature
     }
-    
+
     ProjectBuilder {
         string id PK
         string projectName
@@ -967,7 +1036,7 @@ erDiagram
         string clientEmail
         datetime createdAt
     }
-    
+
     Payment {
         string id PK
         string userId FK
@@ -979,7 +1048,7 @@ erDiagram
         string clientEmail
         datetime createdAt
     }
-    
+
     Profile {
         string id PK
         string userId
@@ -987,7 +1056,7 @@ erDiagram
         string coreRoleId FK
         boolean isAccepted
     }
-    
+
     WhoYouAre {
         string id PK
         string fullName
@@ -995,7 +1064,7 @@ erDiagram
         string timeZone
         string country
     }
-    
+
     ContactUs {
         int id PK
         string firstName
@@ -1004,14 +1073,14 @@ erDiagram
         string message
         datetime createdAt
     }
-    
+
     Newsletter {
         string id PK
         string email UK
         boolean subscriptionStatus
         datetime createdAt
     }
-    
+
     BlogPost {
         int blogId PK
         string blogTitle UK
@@ -1020,7 +1089,7 @@ erDiagram
         boolean isPublished
         datetime createdAt
     }
-    
+
     ConsultationBooking {
         int id PK
         string name
@@ -1029,7 +1098,7 @@ erDiagram
         enum status
         datetime createdAt
     }
-    
+
     GetQuote {
         int id PK
         string name
@@ -1038,7 +1107,7 @@ erDiagram
         string services
         datetime createdAt
     }
-    
+
     HireUs {
         int id PK
         string name
@@ -1047,7 +1116,7 @@ erDiagram
         string detail
         datetime createdAt
     }
-    
+
     FreeLancersRequest {
         int id PK
         string name
@@ -1057,7 +1126,7 @@ erDiagram
         boolean isAccepted
         datetime createdAt
     }
-    
+
     Visitors {
         string id PK
         string fullName
@@ -1066,7 +1135,7 @@ erDiagram
         string referralSource
         datetime createdAt
     }
-    
+
     MenuItem {
         int id PK
         string title
@@ -1080,6 +1149,7 @@ erDiagram
 ## Key Relationships Summary
 
 ### One-to-Many Relationships
+
 1. **User → Project**: A user can create multiple projects
 2. **User → ProjectRequest**: A user can submit multiple project requests
 3. **User → Payment**: A user can make multiple payments
@@ -1087,15 +1157,18 @@ erDiagram
 5. **ProjectRequest → Service/Industry/Technology/Feature**: A project request can have multiple of each
 
 ### Many-to-Many Relationships
+
 1. **User ↔ Project (InterestedFreelancers)**: Freelancers can be interested in multiple projects
 2. **User ↔ Project (SelectedFreelancers)**: Freelancers can be selected for multiple projects
 3. **User ↔ ProjectBuilder**: Freelancers can be interested/selected for project builders
 
 ### One-to-One Relationships
+
 1. **Profile** has one-to-one relationships with all its sub-tables (WhoYouAre, CoreRole, etc.)
 2. **LegalAgreements** has one-to-one relationships with IdentityVerification and WorkAuthorization
 
 ### Self-Referencing Relationships
+
 1. **MenuItem**: Parent-child hierarchy for nested navigation menus
 
 ---
@@ -1103,14 +1176,18 @@ erDiagram
 ## Database Features
 
 ### Soft Delete Pattern
+
 Most tables implement soft delete with:
+
 - `trashedBy`: String? - Who performed the deletion
 - `trashedAt`: DateTime? - When the deletion occurred
 
 This allows for data recovery and audit trails.
 
 ### Indexing Strategy
+
 The database uses extensive indexing for:
+
 - Primary keys and foreign keys
 - Frequently queried fields (email, username, status)
 - Search fields (blogBody, message)
@@ -1118,13 +1195,16 @@ The database uses extensive indexing for:
 - Composite indexes for complex queries
 
 ### JSON Fields
+
 Several tables use JSON fields for flexible data storage:
+
 - `User.kpi`, `User.kpiHistory`, `User.topProjects`
 - `HireUs.docs`
 - `Payment.metadata`
 - Profile sub-tables (skills, tools, languages, etc.)
 
 ### Cascade Delete
+
 `Milestone` has `onDelete: Cascade` - when a project is deleted, all its milestones are automatically deleted.
 
 ---
@@ -1147,4 +1227,3 @@ Several tables use JSON fields for flexible data storage:
 2. **UUID vs Auto-increment**: Newer tables use UUID, older tables use auto-increment integers
 3. **Timestamps**: Most tables have `createdAt` and many have `updatedAt` for audit trails
 4. **Unique Constraints**: Multiple unique constraints ensure data integrity (emails, usernames, slugs)
-

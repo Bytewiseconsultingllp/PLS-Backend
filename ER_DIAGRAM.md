@@ -12,16 +12,16 @@ erDiagram
     User }o--o{ Project : "selected_for (SelectedFreelancers)"
     User }o--o{ ProjectBuilder : "interested_in (InterestedProjectBuilderFreelancers)"
     User }o--o{ ProjectBuilder : "selected_for (SelectedProjectBuilderFreelancers)"
-    
+
     %% Project Management
     Project ||--o{ Milestone : "contains (projectId)"
-    
+
     %% Project Request System
     ProjectRequest ||--o{ Service : "includes (submissionId)"
     ProjectRequest ||--o{ Industry : "targets (submissionId)"
     ProjectRequest ||--o{ Technology : "uses (submissionId)"
     ProjectRequest ||--o{ Feature : "requires (submissionId)"
-    
+
     %% Freelancer Profile System
     Profile ||--|| WhoYouAre : "has (whoYouAreId)"
     Profile ||--|| CoreRole : "has (coreRoleId)"
@@ -34,14 +34,14 @@ erDiagram
     Profile ||--|| Certifications : "has (certificationsId)"
     Profile ||--|| ProjectQuoting : "has (projectQuotingId)"
     Profile ||--|| LegalAgreements : "has (legalAgreementsId)"
-    
+
     %% Legal System
     LegalAgreements ||--|| IdentityVerification : "includes (identityVerificationId)"
     LegalAgreements ||--|| WorkAuthorization : "includes (workAuthorizationId)"
-    
+
     %% Navigation System
     MenuItem ||--o{ MenuItem : "parent_of (parentId)"
-    
+
     User {
         string uid PK "Primary Key"
         string username UK "Unique"
@@ -59,7 +59,7 @@ erDiagram
         datetime updatedAt
         datetime trashedAt "Soft delete"
     }
-    
+
     Project {
         int id PK
         string title UK
@@ -78,7 +78,7 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     Milestone {
         int id PK
         string mileStoneName UK
@@ -91,7 +91,7 @@ erDiagram
         boolean isMilestoneCompleted
         datetime createdAt
     }
-    
+
     ProjectRequest {
         string id PK
         string userId FK
@@ -116,35 +116,35 @@ erDiagram
         datetime createdAt
         datetime updatedAt
     }
-    
+
     Service {
         string id PK
         string submissionId FK
         string category
         string service
     }
-    
+
     Industry {
         string id PK
         string submissionId FK
         string category
         string industry
     }
-    
+
     Technology {
         string id PK
         string submissionId FK
         string category
         string technology
     }
-    
+
     Feature {
         string id PK
         string submissionId FK
         string category
         string feature
     }
-    
+
     ProjectBuilder {
         string id PK
         string projectName
@@ -164,7 +164,7 @@ erDiagram
         datetime updatedAt
         datetime trashedAt
     }
-    
+
     Payment {
         string id PK
         string userId FK
@@ -186,7 +186,7 @@ erDiagram
         datetime updatedAt
         datetime trashedAt
     }
-    
+
     Profile {
         string id PK
         string userId
@@ -204,7 +204,7 @@ erDiagram
         boolean isAccepted
         datetime trashedAt
     }
-    
+
     WhoYouAre {
         string id PK
         string fullName
@@ -214,32 +214,32 @@ erDiagram
         json professionalLinks
         string phone
     }
-    
+
     CoreRole {
         string id PK
         string primaryDomain
     }
-    
+
     EliteSkillCards {
         string id PK
         json selectedSkills
     }
-    
+
     ToolstackProficiency {
         string id PK
         json selectedTools
     }
-    
+
     DomainExperience {
         string id PK
         json roles
     }
-    
+
     IndustryExperience {
         string id PK
         json selectedIndustries
     }
-    
+
     AvailabilityWorkflow {
         string id PK
         int weeklyCommitment
@@ -249,7 +249,7 @@ erDiagram
         string screenSharing
         string availabilityExceptions
     }
-    
+
     SoftSkills {
         string id PK
         string collaborationStyle
@@ -258,12 +258,12 @@ erDiagram
         json languages
         string teamVsSolo
     }
-    
+
     Certifications {
         string id PK
         json certificates
     }
-    
+
     ProjectQuoting {
         string id PK
         string compensationPreference
@@ -273,26 +273,26 @@ erDiagram
         string milestoneTerms
         string willSubmitProposals
     }
-    
+
     LegalAgreements {
         string id PK
         json agreements
         string identityVerificationId FK
         string workAuthorizationId FK
     }
-    
+
     IdentityVerification {
         string id PK
         string idType
         string taxDocType
         boolean addressVerified
     }
-    
+
     WorkAuthorization {
         string id PK
         boolean interested
     }
-    
+
     ContactUs {
         int id PK
         string firstName
@@ -302,14 +302,14 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     Newsletter {
         string id PK
         string email UK
         boolean subscriptionStatus
         datetime createdAt
     }
-    
+
     BlogPost {
         int blogId PK
         string blogTitle UK
@@ -320,7 +320,7 @@ erDiagram
         boolean isPublished
         datetime createdAt
     }
-    
+
     ConsultationBooking {
         int id PK
         string name
@@ -334,7 +334,7 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     GetQuote {
         int id PK
         string name
@@ -348,7 +348,7 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     HireUs {
         int id PK
         string name
@@ -361,7 +361,7 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     FreeLancersRequest {
         int id PK
         string name
@@ -378,12 +378,12 @@ erDiagram
         datetime createdAt
         datetime trashedAt
     }
-    
+
     NichesForFreelancers {
         int id PK
         string niche
     }
-    
+
     Visitors {
         string id PK
         string fullName
@@ -398,7 +398,7 @@ erDiagram
         datetime updatedAt
         datetime trashedAt
     }
-    
+
     MenuItem {
         int id PK
         string title
@@ -409,13 +409,13 @@ erDiagram
         int parentId FK "Self-reference"
         datetime trashedAt
     }
-    
+
     RateLimiterFlexible {
         string key PK "IP or identifier"
         int points "Request count"
         datetime expire
     }
-    
+
     CreateServicesForQuote {
         int id PK
         string services
@@ -427,13 +427,14 @@ erDiagram
 ## Simplified Core Relationships
 
 ### User Management Flow
+
 ```mermaid
 graph TB
     User[User<br/>uid, email, role, kpiRank]
     Project[Project<br/>title, bounty, status]
     Milestone[Milestone<br/>name, progress, deadline]
     Payment[Payment<br/>amount, status, stripeId]
-    
+
     User -->|creates| Project
     User -->|interested in| Project
     User -->|selected for| Project
@@ -442,17 +443,19 @@ graph TB
 ```
 
 ### Freelancer Registration Flow
+
 ```mermaid
 graph LR
     FR[FreeLancersRequest<br/>Initial Application]
     Profile[Profile<br/>Comprehensive Profile]
     User[User<br/>Approved Freelancer]
-    
+
     FR -->|if accepted| Profile
     Profile -->|if approved| User
 ```
 
 ### Project Request Flow
+
 ```mermaid
 graph TB
     Visitor[Visitor<br/>First Contact]
@@ -463,7 +466,7 @@ graph TB
     Feature[Feature]
     Payment[Payment<br/>Stripe Integration]
     Project[Project<br/>Approved Project]
-    
+
     Visitor -->|submits| PR
     PR -->|includes| Service
     PR -->|targets| Industry
@@ -474,13 +477,14 @@ graph TB
 ```
 
 ### Business Inquiry Flow
+
 ```mermaid
 graph TB
     ContactUs[ContactUs<br/>General Inquiry]
     GetQuote[GetQuote<br/>Quote Request]
     Consultation[ConsultationBooking<br/>Consultation Request]
     HireUs[HireUs<br/>Direct Hire Request]
-    
+
     ContactUs -.->|follow-up| GetQuote
     GetQuote -.->|if interested| Consultation
     Consultation -.->|if agreed| HireUs
@@ -493,12 +497,14 @@ graph TB
 ### By User Role
 
 #### CLIENT (Regular User)
+
 - Can create ProjectRequest
 - Can view own projects
 - Can make payments
 - Can rate and review completed projects
 
 #### FREELANCER
+
 - Can view available projects
 - Can express interest in projects
 - Can be selected for projects
@@ -506,12 +512,14 @@ graph TB
 - Can view payments for their projects
 
 #### MODERATOR
+
 - Can manage most resources
 - Can accept/reject freelancer applications
 - Can manage projects
 - Cannot permanently delete (requires ADMIN)
 
 #### ADMIN
+
 - Full access to all resources
 - Can permanently delete
 - Can manage user roles
@@ -522,6 +530,7 @@ graph TB
 ## Data Flow Diagrams
 
 ### New Client Onboarding
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -530,7 +539,7 @@ sequenceDiagram
     participant Payment
     participant Project
     participant User
-    
+
     Client->>Visitors: Submit initial contact
     Client->>ProjectRequest: Submit detailed project
     ProjectRequest->>Payment: Process payment
@@ -540,6 +549,7 @@ sequenceDiagram
 ```
 
 ### Freelancer Onboarding
+
 ```mermaid
 sequenceDiagram
     participant Freelancer
@@ -547,7 +557,7 @@ sequenceDiagram
     participant Profile
     participant Admin
     participant User
-    
+
     Freelancer->>FreeLancersRequest: Submit join request
     Admin->>FreeLancersRequest: Review application
     FreeLancersRequest->>Profile: Create detailed profile
@@ -557,13 +567,14 @@ sequenceDiagram
 ```
 
 ### Project Assignment Flow
+
 ```mermaid
 sequenceDiagram
     participant Admin
     participant Project
     participant Freelancer
     participant Milestone
-    
+
     Admin->>Project: Create project
     Freelancer->>Project: Express interest
     Admin->>Project: Select freelancer
@@ -578,38 +589,50 @@ sequenceDiagram
 ## Key Design Patterns
 
 ### 1. Soft Delete Pattern
+
 Almost all tables implement soft delete:
+
 ```sql
 trashedBy: String?
 trashedAt: DateTime?
 ```
+
 Benefits:
+
 - Data recovery capability
 - Audit trail
 - Compliance with data retention policies
 
 ### 2. Timestamp Pattern
+
 Most tables track creation and updates:
+
 ```sql
 createdAt: DateTime @default(now())
 updatedAt: DateTime @updatedAt
 ```
 
 ### 3. Many-to-Many with Implicit Junction Tables
+
 Prisma creates implicit junction tables for:
+
 - User ↔ Project (interested freelancers)
 - User ↔ Project (selected freelancers)
 - User ↔ ProjectBuilder (interested/selected)
 
 ### 4. Composite Profile Pattern
+
 Freelancer Profile is split into 11 separate tables:
+
 - Reduces table bloat
 - Allows independent updates
 - Better normalization
 - Flexible schema evolution
 
 ### 5. Enumeration Pattern
+
 Uses enums for constrained values:
+
 - Role, ProjectStatus, PaymentStatus, etc.
 - Type safety at database level
 - Clear domain logic
@@ -619,19 +642,24 @@ Uses enums for constrained values:
 ## Performance Considerations
 
 ### Heavily Indexed Tables
+
 1. **User**: 7 indexes (uid, username, email, role, etc.)
 2. **Project**: 9 indexes (id, title, status, deadline, etc.)
 3. **Milestone**: 7 indexes
 4. **Payment**: 8 indexes
 
 ### JSON Fields for Flexibility
+
 Used for:
+
 - Variable-length arrays (skills, tools, certificates)
 - Nested data (professional links, metadata)
 - Dynamic configuration
 
 ### Cascade Deletes
+
 Only used for:
+
 - Milestone → Project (when project deleted, milestones auto-delete)
 - MenuItem → MenuItem (parent-child hierarchy)
 
@@ -640,6 +668,7 @@ Only used for:
 ## Schema Evolution Notes
 
 ### Version 1 Tables (Auto-increment IDs)
+
 - User (uid is cuid)
 - Project
 - Milestone
@@ -651,6 +680,7 @@ Only used for:
 - BlogPost
 
 ### Version 2 Tables (UUID)
+
 - ProjectRequest
 - ProjectBuilder
 - Visitors
@@ -658,6 +688,7 @@ Only used for:
 - Profile subsystem
 
 This shows evolution from integer IDs to UUIDs for:
+
 - Better distributed systems support
 - No ID collision in microservices
 - Better security (non-guessable IDs)
@@ -666,16 +697,14 @@ This shows evolution from integer IDs to UUIDs for:
 
 ## Summary Statistics
 
-| Metric | Count |
-|--------|-------|
-| Total Tables | 33 |
-| Total Enums | 8 |
-| One-to-One Relations | 11 |
-| One-to-Many Relations | 15+ |
-| Many-to-Many Relations | 4 |
-| Tables with Soft Delete | 18 |
-| Tables with JSON Fields | 13 |
-| Tables with Unique Constraints | 25+ |
-| Total Indexes | 100+ |
-
-
+| Metric                         | Count |
+| ------------------------------ | ----- |
+| Total Tables                   | 33    |
+| Total Enums                    | 8     |
+| One-to-One Relations           | 11    |
+| One-to-Many Relations          | 15+   |
+| Many-to-Many Relations         | 4     |
+| Tables with Soft Delete        | 18    |
+| Tables with JSON Fields        | 13    |
+| Tables with Unique Constraints | 25+   |
+| Total Indexes                  | 100+  |
