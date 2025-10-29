@@ -1,4 +1,4 @@
-name: Deployment of backend on the server using bun,pm2 and nginx as reverse proxy
+name: Deploying the backend on the server using Bun,PM2 and nginx as reverse proxy
 
 on:
   push:
@@ -14,10 +14,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: 22
+          bun-version: latest   # or specify a version, e.g., 1.1.25
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.10
@@ -32,10 +32,10 @@ jobs:
             echo "Pulling latest changes..."
             git pull origin main
 
-            echo "Installing dependencies with legacy peer deps..."
-            bun install
+            echo "Installing dependencies using Bun..."
+            bun install 
 
-            echo "Building project..."
+            echo "Building project with Bun..."
             bun run build
 
             echo "Restarting PM2 service..."
