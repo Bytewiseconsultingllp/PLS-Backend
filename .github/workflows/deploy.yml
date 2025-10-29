@@ -1,0 +1,44 @@
+name: Deployment of backend on the server using bun,pm2 and nginx as reverse proxy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd ${{ secrets.APP_PATH }}
+
+            echo "Pulling latest changes..."
+            git pull origin main
+
+            echo "Installing dependencies with legacy peer deps..."
+            bun install
+
+            echo "Building project..."
+            bun run build
+
+            echo "Restarting PM2 service..."
+            pm2 restart pls-backend-upgraded --update-env
+
+            echo "✅ Deployment complete and changes reflected!"
