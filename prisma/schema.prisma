@@ -324,7 +324,6 @@ model BlogPost {
   @@index([blogTitle])
   @@index([blogSlug])
   @@index([createdAt])
-  @@index([blogBody])
   @@map("blogposts")
 }
 
