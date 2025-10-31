@@ -3,43 +3,49 @@ import blogController from "../../controllers/blogController/blogController";
 import { validateDataMiddleware } from "../../middlewares/validationMiddleware";
 import { blogPostSchema } from "../../validation/zod";
 import authMiddleware from "../../middlewares/authMiddleware";
+import { blogJsonParser } from "../../middlewares/jsonSanitizationMiddleware";
 export const blogRouter: Router = Router();
 blogRouter
-  .route("/createBlog")
-  .post(
-    validateDataMiddleware(blogPostSchema),
-    authMiddleware.checkToken,
-    authMiddleware.checkIfUserIAdminOrModerator,
-    blogController.createBlog,
-  );
+ .route("/createBlog")
+ .post(
+   blogJsonParser,
+   validateDataMiddleware(blogPostSchema),
+   authMiddleware.checkToken,
+   authMiddleware.checkIfUserIAdminOrModerator,
+   blogController.createBlog,
+ );
 blogRouter.route("/getSingleBlog/:blogSlug").get(blogController.getSingleBlog);
 blogRouter.route("/getAllPublicBlogs").get(blogController.getAllPublicBlog);
 blogRouter
-  .route("/getAllPrivateBlogs")
-  .get(
-    authMiddleware.checkToken,
-    authMiddleware.checkIfUserIsAdmin,
-    blogController.getAllPrivateBlogs,
-  );
+ .route("/getAllPrivateBlogs")
+ .get(
+   authMiddleware.checkToken,
+   authMiddleware.checkIfUserIsAdmin,
+   blogController.getAllPrivateBlogs,
+ );
 blogRouter
-  .route("/updateBlog/:blogSlug")
-  .patch(
-    validateDataMiddleware(blogPostSchema),
-    authMiddleware.checkToken,
-    authMiddleware.checkIfUserIAdminOrModerator,
-    blogController.updateBlog,
-  );
+ .route("/updateBlog/:blogSlug")
+ .patch(
+   blogJsonParser,
+   validateDataMiddleware(blogPostSchema),
+   authMiddleware.checkToken,
+   authMiddleware.checkIfUserIAdminOrModerator,
+   blogController.updateBlog,
+ );
 blogRouter
-  .route("/makeBlogPublicOrPrivate/:blogSlug")
-  .patch(
-    authMiddleware.checkToken,
-    authMiddleware.checkIfUserIsAdmin,
-    blogController.makeBlogPublicOrPrivate,
-  );
+ .route("/makeBlogPublicOrPrivate/:blogSlug")
+ .patch(
+   authMiddleware.checkToken,
+   authMiddleware.checkIfUserIsAdmin,
+   blogController.makeBlogPublicOrPrivate,
+ );
 blogRouter
-  .route("/deleteBlog/:blogSlug")
-  .delete(
-    authMiddleware.checkToken,
-    authMiddleware.checkIfUserIsAdmin,
-    blogController.deleteBlog,
-  );
+ .route("/deleteBlog/:blogSlug")
+ .delete(
+   authMiddleware.checkToken,
+   authMiddleware.checkIfUserIsAdmin,
+   blogController.deleteBlog,
+ );
+
+
+
