@@ -36,6 +36,6 @@ jobs:
             bun install
             
             echo "Restarting PM2 service..."
-            pm2 restart pls-backend-upgraded --update-env
+            pm2 restart pls-backend-upgraded
 
             echo "✅ Deployment complete and changes reflected!"
