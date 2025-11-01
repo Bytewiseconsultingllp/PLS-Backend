@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome - Moderator Account Created</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background-color: #2196f3;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 5px 5px 0 0;
+      }
+      .content {
+        background-color: #f9f9f9;
+        padding: 30px;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .credentials-box {
+        background-color: #fff;
+        border: 2px solid #2196f3;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+      .credential-item {
+        margin: 10px 0;
+        padding: 10px;
+        background-color: #f0f0f0;
+        border-radius: 3px;
+      }
+      .credential-label {
+        font-weight: bold;
+        color: #2196f3;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #2196f3;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .info-box {
+        background-color: #e3f2fd;
+        border: 1px solid #2196f3;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🎯 Welcome to the Team!</h1>
+    </div>
+    <div class="content">
+      <h2>Hi {{MODERATOR_NAME}},</h2>
+
+      <p>
+        Your moderator account has been successfully created by the
+        administrator. Welcome to our project management platform!
+      </p>
+
+      <div class="credentials-box">
+        <h3>Your Login Credentials</h3>
+        <div class="credential-item">
+          <span class="credential-label">Username:</span><br />
+          <code>{{USERNAME}}</code>
+        </div>
+        <div class="credential-item">
+          <span class="credential-label">Temporary Password:</span><br />
+          <code>{{TEMP_PASSWORD}}</code>
+        </div>
+        <div class="credential-item">
+          <span class="credential-label">Email:</span><br />
+          <code>{{EMAIL}}</code>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <strong>🔒 Security Tip:</strong>
+        <p style="margin: 10px 0">
+          Please keep these credentials secure. You can change your password
+          anytime after logging in.
+        </p>
+      </div>
+
+      <p style="text-align: center">
+        <a href="{{LOGIN_URL}}" class="button">Login to Your Account</a>
+      </p>
+
+      <p><strong>Your Responsibilities as a Moderator:</strong></p>
+      <ul>
+        <li>Manage assigned project milestones</li>
+        <li>Update milestone progress and status</li>
+        <li>Approve completed milestones</li>
+        <li>Coordinate with clients and freelancers</li>
+        <li>Ensure project timelines are met</li>
+      </ul>
+
+      <p>
+        Once projects are assigned to you, you'll be able to view and manage
+        them from your dashboard.
+      </p>
+
+      <p>
+        If you have any questions or need assistance, please contact the
+        administrator.
+      </p>
+
+      <p>
+        Best regards,<br />
+        <strong>The Admin Team</strong>
+      </p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 PLS Platform. All rights reserved.</p>
+      <p>This email contains sensitive information. Please keep it secure.</p>
+    </div>
+  </body>
+</html>
