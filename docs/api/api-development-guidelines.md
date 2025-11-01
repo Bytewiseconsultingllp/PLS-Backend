@@ -21,6 +21,7 @@
 ### 3. Database configuration
 
 - Create `.env` file in your `Project's` root directory by using following command.
+
   - ```bash
     touch .env   # if this command didn't work for you then you can create it manually
     ```

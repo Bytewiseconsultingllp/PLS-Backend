@@ -5,7 +5,7 @@ import {
   NOTFOUNDMSG,
 } from "../constants";
 import { db } from "../database/db";
-import type { TPROJECT, TUSER } from "../types";
+import type { TUSER } from "../types";
 import logger from "./loggerUtils";
 
 export const findUniqueUser = async (id: string): Promise<TUSER> => {
@@ -40,55 +40,58 @@ export const findUniqueUser = async (id: string): Promise<TUSER> => {
   }
 };
 
-export const findUniqueProject = async (
-  uniqueIdentifier: string,
-): Promise<TPROJECT> => {
-  if (!uniqueIdentifier)
-    throw { status: BADREQUESTCODE, message: "Id is required!" };
-  let project: unknown = null;
-  try {
-    project = await db.project.findUniqueOrThrow({
-      where: { projectSlug: uniqueIdentifier },
-    });
-    if (!project) {
-      logger.error("project not found in findUniqueUtils.ts");
-      throw { status: NOTFOUNDCODE, message: NOTFOUNDMSG };
-    } else return project as TPROJECT;
-  } catch (error) {
-    if (error instanceof Error)
-      throw {
-        status: NOTFOUNDCODE,
-        message: error.message || INTERNALSERVERERRORMSG,
-      };
-    else throw { status: NOTFOUNDCODE, message: INTERNALSERVERERRORMSG };
-  }
-};
+// DEPRECATED: These functions are only used by old/excluded controllers
+// Commented out to fix build issues - uncomment and update if needed
 
-export const getFreelancerUsernamesWhoAreInterested = async (
-  freelancerIds: string[],
-): Promise<string[]> => {
-  try {
-    return await Promise.all(
-      freelancerIds.map(async (freelancerId) => {
-        const user = await db.user.findUniqueOrThrow({
-          where: {
-            uid: freelancerId,
-            trashedBy: null,
-            trashedAt: null,
-            role: "FREELANCER",
-          },
-          select: { username: true },
-        });
-        return user.username;
-      }),
-    );
-  } catch (errr) {
-    if (errr instanceof Error)
-      throw {
-        status: NOTFOUNDCODE,
-        message:
-          errr.message + " with freelancer role" || INTERNALSERVERERRORMSG,
-      };
-    else throw { status: NOTFOUNDCODE, message: INTERNALSERVERERRORMSG };
-  }
-};
+// export const findUniqueProject = async (
+//   uniqueIdentifier: string,
+// ): Promise<TPROJECT> => {
+//   if (!uniqueIdentifier)
+//     throw { status: BADREQUESTCODE, message: "Id is required!" };
+//   let project: unknown = null;
+//   try {
+//     project = await db.project.findUniqueOrThrow({
+//       where: { id: uniqueIdentifier }, // Updated from projectSlug to id
+//     });
+//     if (!project) {
+//       logger.error("project not found in findUniqueUtils.ts");
+//       throw { status: NOTFOUNDCODE, message: NOTFOUNDMSG };
+//     } else return project as TPROJECT;
+//   } catch (error) {
+//     if (error instanceof Error)
+//       throw {
+//         status: NOTFOUNDCODE,
+//         message: error.message || INTERNALSERVERERRORMSG,
+//       };
+//     else throw { status: NOTFOUNDCODE, message: INTERNALSERVERERRORMSG };
+//   }
+// };
+
+// export const getFreelancerUsernamesWhoAreInterested = async (
+//   freelancerIds: string[],
+// ): Promise<string[]> => {
+//   try {
+//     return await Promise.all(
+//       freelancerIds.map(async (freelancerId) => {
+//         const user = await db.user.findUniqueOrThrow({
+//           where: {
+//             uid: freelancerId,
+//             trashedBy: null,
+//             trashedAt: null,
+//             role: "FREELANCER",
+//           },
+//           select: { username: true },
+//         });
+//         return user.username;
+//       }),
+//     );
+//   } catch (errr) {
+//     if (errr instanceof Error)
+//       throw {
+//         status: NOTFOUNDCODE,
+//         message:
+//           errr.message + " with freelancer role" || INTERNALSERVERERRORMSG,
+//       };
+//     else throw { status: NOTFOUNDCODE, message: INTERNALSERVERERRORMSG };
+//   }
+// };

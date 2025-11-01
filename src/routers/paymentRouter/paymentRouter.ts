@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { PaymentController } from "../../controllers/paymentController/paymentController";
+import { ProjectPaymentController } from "../../controllers/paymentController/projectPaymentController";
 import { validateDataMiddleware } from "../../middlewares/validationMiddleware";
 import authMiddleware from "../../middlewares/authMiddleware";
 import {
@@ -54,6 +55,19 @@ paymentRouter.post(
 // ** Payment History Routes **
 paymentRouter.get("/history", authMiddleware.checkToken, (req, res) =>
   PaymentController.getPaymentHistory(req, res),
+);
+
+// ** Project Payment Routes **
+paymentRouter.post(
+  "/project/create-checkout-session",
+  authMiddleware.checkToken,
+  (req, res) => ProjectPaymentController.createProjectCheckoutSession(req, res),
+);
+
+paymentRouter.get(
+  "/project/:projectId/status",
+  authMiddleware.checkToken,
+  (req, res) => ProjectPaymentController.getProjectPaymentStatus(req, res),
 );
 
 export { paymentRouter };

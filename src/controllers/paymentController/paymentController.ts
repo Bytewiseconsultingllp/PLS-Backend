@@ -522,7 +522,8 @@ async function handlePaymentIntentSucceeded(event: {
 }): Promise<void> {
   const paymentIntent = event.data.object;
 
-  await prisma.payment.updateMany({
+  // Update payment record
+  const payments = await prisma.payment.updateMany({
     where: {
       stripePaymentIntentId: paymentIntent.id,
     },
@@ -531,6 +532,24 @@ async function handlePaymentIntentSucceeded(event: {
       paidAt: new Date(),
     },
   });
+
+  // Update project payment status if this is a project payment
+  if (payments.count > 0) {
+    const payment = await prisma.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntent.id },
+      select: { projectId: true },
+    });
+
+    if (payment?.projectId) {
+      await prisma.project.update({
+        where: { id: payment.projectId },
+        data: { paymentStatus: "SUCCEEDED" },
+      });
+      logger.info(
+        `Project payment status updated to SUCCEEDED: ${payment.projectId}`,
+      );
+    }
+  }
 
   logger.info(`Payment succeeded: ${paymentIntent.id}`);
 }
@@ -540,7 +559,8 @@ async function handlePaymentIntentFailed(event: {
 }): Promise<void> {
   const paymentIntent = event.data.object;
 
-  await prisma.payment.updateMany({
+  // Update payment record
+  const payments = await prisma.payment.updateMany({
     where: {
       stripePaymentIntentId: paymentIntent.id,
     },
@@ -548,6 +568,24 @@ async function handlePaymentIntentFailed(event: {
       status: "FAILED",
     },
   });
+
+  // Update project payment status if this is a project payment
+  if (payments.count > 0) {
+    const payment = await prisma.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntent.id },
+      select: { projectId: true },
+    });
+
+    if (payment?.projectId) {
+      await prisma.project.update({
+        where: { id: payment.projectId },
+        data: { paymentStatus: "FAILED" },
+      });
+      logger.info(
+        `Project payment status updated to FAILED: ${payment.projectId}`,
+      );
+    }
+  }
 
   logger.info(`Payment failed: ${paymentIntent.id}`);
 }
@@ -557,7 +595,8 @@ async function handleCheckoutSessionCompleted(event: {
 }): Promise<void> {
   const session = event.data.object;
 
-  await prisma.payment.updateMany({
+  // Update payment record
+  const payments = await prisma.payment.updateMany({
     where: {
       stripeSessionId: session.id,
     },
@@ -567,6 +606,24 @@ async function handleCheckoutSessionCompleted(event: {
     },
   });
 
+  // Update project payment status if this is a project payment
+  if (payments.count > 0) {
+    const payment = await prisma.payment.findFirst({
+      where: { stripeSessionId: session.id },
+      select: { projectId: true },
+    });
+
+    if (payment?.projectId) {
+      await prisma.project.update({
+        where: { id: payment.projectId },
+        data: { paymentStatus: "SUCCEEDED" },
+      });
+      logger.info(
+        `Project payment status updated to SUCCEEDED: ${payment.projectId}`,
+      );
+    }
+  }
+
   logger.info(`Checkout session completed: ${session.id}`);
 }
 
@@ -575,7 +632,8 @@ async function handleCheckoutSessionExpired(event: {
 }): Promise<void> {
   const session = event.data.object;
 
-  await prisma.payment.updateMany({
+  // Update payment record
+  const payments = await prisma.payment.updateMany({
     where: {
       stripeSessionId: session.id,
     },
@@ -583,6 +641,24 @@ async function handleCheckoutSessionExpired(event: {
       status: "CANCELED",
     },
   });
+
+  // Update project payment status if this is a project payment
+  if (payments.count > 0) {
+    const payment = await prisma.payment.findFirst({
+      where: { stripeSessionId: session.id },
+      select: { projectId: true },
+    });
+
+    if (payment?.projectId) {
+      await prisma.project.update({
+        where: { id: payment.projectId },
+        data: { paymentStatus: "CANCELED" },
+      });
+      logger.info(
+        `Project payment status updated to CANCELED: ${payment.projectId}`,
+      );
+    }
+  }
 
   logger.info(`Checkout session expired: ${session.id}`);
 }

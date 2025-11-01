@@ -1,0 +1,111 @@
+===========================================
+QUICK PAYMENT TEST - COPY/PASTE COMMANDS
+===========================================
+
+STEP 1: Create Visitor
+-----------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/create' -H 'Content-Type: application/json' -d '{"fullName":"Test User","businessEmail":"test@example.com","phoneNumber":"1234567890","companyName":"Test Corp","businessType":"Technology","referralSource":"Test"}'
+
+→ Save VISITOR_ID
+
+
+STEP 2: Add Services (Array directly!)
+---------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/services' -H 'Content-Type: application/json' -d '[{"name":"SOFTWARE_DEVELOPMENT","childServices":["Web Application"]}]'
+
+
+STEP 3: Add Technologies (Array directly!)
+-------------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/technologies' -H 'Content-Type: application/json' -d '[{"category":"BACKEND","technologies":["NODE_JS"]}]'
+
+
+STEP 4: Add Features (Array directly!)
+--------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/features' -H 'Content-Type: application/json' -d '[{"category":"USER_MANAGEMENT","features":["AUTHENTICATION"]}]'
+
+
+STEP 5: Add Timeline (Auto-calculates estimate!)
+--------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/timeline' -H 'Content-Type: application/json' -d '{"option":"STANDARD_BUILD","rushFeePercent":0,"estimatedDays":60}'
+
+
+STEP 6: Get Estimate (Auto-calculated)
+---------------------------
+curl -X GET 'http://localhost:8000/api/v1/visitors/VISITOR_ID/estimate'
+
+→ Note the calculatedTotal
+
+
+STEP 7: Accept Estimate (No body!)
+------------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/estimate/accept' -H 'Content-Type: application/json'
+
+
+STEP 8: Sign Agreement
+-----------------------
+curl -X POST 'http://localhost:8000/api/v1/visitors/VISITOR_ID/service-agreement' -H 'Content-Type: application/json' -d '{"documentUrl":"https://example.com/agreement.pdf","accepted":true}'
+
+
+STEP 9: Register User
+----------------------
+curl -X POST 'http://localhost:8000/api/v1/auth/register' -H 'Content-Type: application/json' -d '{"username":"testuser123","fullName":"Test User","email":"test@example.com","password":"SecurePass123!"}'
+
+→ Check server logs for OTP
+
+
+STEP 10: Verify OTP (Creates Project!)
+---------------------------------------
+curl -X POST 'http://localhost:8000/api/v1/auth/verify-otp' -H 'Content-Type: application/json' -d '{"email":"test@example.com","OTP":"YOUR_OTP_HERE"}'
+
+→ Save ACCESS_TOKEN
+
+
+STEP 11: Get Projects
+----------------------
+curl -X GET 'http://localhost:8000/api/v1/projects' -H 'Authorization: Bearer ACCESS_TOKEN'
+
+→ Save PROJECT_ID
+→ Check paymentStatus: "PENDING"
+
+
+STEP 12: Create Checkout Session
+---------------------------------
+curl -X POST 'http://localhost:8000/api/v1/payment/project/create-checkout-session' -H 'Authorization: Bearer ACCESS_TOKEN' -H 'Content-Type: application/json' -d '{"projectId":"PROJECT_ID","successUrl":"http://localhost:3000/success","cancelUrl":"http://localhost:3000/cancel"}'
+
+→ Copy checkoutUrl and open in browser
+→ Pay with: 4242 4242 4242 4242
+
+
+STEP 13: Check Payment Status
+------------------------------
+curl -X GET 'http://localhost:8000/api/v1/payment/project/PROJECT_ID/status' -H 'Authorization: Bearer ACCESS_TOKEN'
+
+→ Should show paymentStatus: "SUCCEEDED"
+
+
+===========================================
+TEST CARD
+===========================================
+Card Number: 4242 4242 4242 4242
+Expiry: 12/25
+CVC: 123
+ZIP: 12345
+
+
+===========================================
+EXPECTED WEBHOOKS (Terminal 1)
+===========================================
+✔ Received event checkout.session.completed
+✔ --> POST http://localhost:8000/api/v1/payments/webhook [200]
+
+
+===========================================
+SUCCESS INDICATORS
+===========================================
+✅ Project created with paymentStatus: PENDING
+✅ Checkout session created
+✅ Payment completed
+✅ Webhook received [200]
+✅ Payment status: SUCCEEDED
+✅ Project paymentStatus: SUCCEEDED
+

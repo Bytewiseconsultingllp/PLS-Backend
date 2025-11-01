@@ -207,6 +207,45 @@ export default {
         otpPasswordExpiry: null,
       },
     });
+
+    // Auto-convert visitor to project if applicable
+    try {
+      const visitor = await db.visitor.findFirst({
+        where: {
+          details: { businessEmail: email.toLowerCase() },
+          isConverted: false,
+        },
+        include: {
+          details: true,
+          estimate: true,
+          serviceAgreement: true,
+        },
+      });
+
+      if (visitor && visitor.estimate && visitor.serviceAgreement) {
+        if (
+          visitor.estimate.estimateAccepted &&
+          visitor.serviceAgreement.accepted
+        ) {
+          const { visitorConversionService } = await import(
+            "../../services/visitorConversionService"
+          );
+          // Note: Payment redirect URLs should be passed from frontend during OTP verification
+          // For now, conversion happens without payment. Payment can be initiated separately.
+          await visitorConversionService.convertVisitorToProject(
+            visitor.id,
+            user.uid,
+          );
+          console.log(
+            `Auto-converted visitor ${visitor.id} to project for user ${user.uid}`,
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error auto-converting visitor to project:", error);
+      // Don't fail verification if conversion fails
+    }
+
     const { generateAccessToken, generateRefreshToken } = tokenGeneratorService;
     // test
     payLoad = {
@@ -284,10 +323,13 @@ export default {
   }),
   // ** RefreshedAccessToken
   refreshAcessToken: asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.header("Authorization")?.split(" ")[1];
+    const refreshToken = req.body.refreshToken;
 
     if (!refreshToken)
-      throw { status: BADREQUESTCODE, message: "Please provide refresh token" };
+      throw {
+        status: BADREQUESTCODE,
+        message: "Please provide refresh token!!",
+      };
 
     const [error, decoded] = verifyToken<TPAYLOAD>(refreshToken);
 

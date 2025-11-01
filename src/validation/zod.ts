@@ -469,13 +469,13 @@ export const blogPostSchema = z.object({
     .min(1, { message: "blogBody is required!!" })
     .min(3, { message: "blogBody must be at least 3 characters long." }),
 });
-// ** MileStone Schema
+// ** MileStone Schema (NEW - Updated with freelancer and moderator fields)
 export const MilestoneSchema = z.object({
-  mileStoneName: z
-    .string({ message: "mileStoneName is required!!" })
-    .min(1, { message: "mileStoneName is required!!" })
-    .min(3, { message: "mileStoneName must be at least 3 characters long." })
-    .max(100, { message: "mileStoneName can be at most 100 characters long." }),
+  milestoneName: z
+    .string({ message: "milestoneName is required!!" })
+    .min(1, { message: "milestoneName is required!!" })
+    .min(3, { message: "milestoneName must be at least 3 characters long." })
+    .max(100, { message: "milestoneName can be at most 100 characters long." }),
 
   description: z.string({ message: "description must be a string" }).optional(),
 
@@ -486,20 +486,116 @@ export const MilestoneSchema = z.object({
       message: "Invalid date format for deadline",
     }),
 
-  priorityRank: z
-    .number({ message: "priorityRank is required!!" })
-    .min(1, { message: "priorityRank must be at least 1" })
-    .int({ message: "priorityRank must be an integer" }),
-
-  totalProgressPoints: z
-    .number({ message: "totalProgressPoints must be a number" })
-    .optional(),
-
-  progress: z.number({ message: "progress must be a number" }).default(0),
+  progress: z
+    .number({ message: "progress must be a number" })
+    .min(0, { message: "progress cannot be negative" })
+    .max(100, { message: "progress cannot exceed 100" })
+    .default(0),
 
   isMilestoneCompleted: z
     .boolean({ message: "isMilestoneCompleted must be a boolean" })
     .default(false),
+
+  // Status and workflow
+  status: z
+    .enum(["PLANNED", "IN_PROGRESS", "BLOCKED", "COMPLETED", "CANCELLED"], {
+      message: "Invalid status value",
+    })
+    .optional(),
+
+  priority: z
+    .enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"], {
+      message: "Invalid priority value",
+    })
+    .optional(),
+
+  phase: z
+    .enum(["DISCOVERY", "DESIGN", "IMPLEMENTATION", "TESTING", "DEPLOYMENT"], {
+      message: "Invalid phase value",
+    })
+    .optional(),
+
+  riskLevel: z
+    .enum(["LOW", "MEDIUM", "HIGH"], {
+      message: "Invalid risk level value",
+    })
+    .optional(),
+
+  // Freelancer assignment (NEW)
+  assignedFreelancerId: z
+    .string({ message: "assignedFreelancerId must be a string" })
+    .uuid({ message: "assignedFreelancerId must be a valid UUID" })
+    .optional(),
+
+  // Budget and time tracking
+  estimatedHours: z
+    .number({ message: "estimatedHours must be a number" })
+    .min(0, { message: "estimatedHours cannot be negative" })
+    .optional(),
+
+  actualHours: z
+    .number({ message: "actualHours must be a number" })
+    .min(0, { message: "actualHours cannot be negative" })
+    .optional(),
+
+  budgetEstimate: z
+    .number({ message: "budgetEstimate must be a number" })
+    .min(0, { message: "budgetEstimate cannot be negative" })
+    .optional(),
+
+  actualCost: z
+    .number({ message: "actualCost must be a number" })
+    .min(0, { message: "actualCost cannot be negative" })
+    .optional(),
+
+  // Blocking
+  blocked: z.boolean({ message: "blocked must be a boolean" }).optional(),
+
+  blockerReason: z
+    .string({ message: "blockerReason must be a string" })
+    .optional(),
+
+  // Deliverables
+  deliverableUrl: z
+    .string({ message: "deliverableUrl must be a string" })
+    .url({ message: "deliverableUrl must be a valid URL" })
+    .optional(),
+
+  tags: z
+    .array(z.string(), { message: "tags must be an array of strings" })
+    .optional(),
+
+  notes: z.string({ message: "notes must be a string" }).optional(),
+
+  // Legacy fields (backward compatibility)
+  assigneeName: z
+    .string({ message: "assigneeName must be a string" })
+    .optional(),
+
+  assigneeEmail: z
+    .string({ message: "assigneeEmail must be a string" })
+    .email({ message: "assigneeEmail must be a valid email" })
+    .optional(),
+});
+
+// Schema for updating milestone (partial)
+export const MilestoneUpdateSchema = MilestoneSchema.partial();
+
+// Schema for moderator approval
+export const MilestoneModeratorApprovalSchema = z.object({
+  moderatorApproved: z.boolean({
+    message: "moderatorApproved must be a boolean",
+  }),
+  moderatorNotes: z
+    .string({ message: "moderatorNotes must be a string" })
+    .optional(),
+});
+
+// Schema for toggling accepting bids
+export const AcceptingBidsSchema = z.object({
+  acceptingBids: z.boolean({
+    message: "acceptingBids must be a boolean",
+  }),
 });
 
 // ** Schema for multiple milestones
@@ -1101,4 +1197,530 @@ export const paymentFilterSchema = z.object({
     .refine((val) => !val || !isNaN(Number(val)), {
       message: "limit must be a valid number",
     }),
+});
+
+// ============================================
+// CLIENT PROJECT CREATION SCHEMAS (NEW SYSTEM)
+// ============================================
+
+// Schema for project details
+export const clientProjectDetailsSchema = z.object({
+  fullName: z
+    .string({ message: "fullName is required!!" })
+    .min(1, { message: "fullName is required!!" })
+    .min(2, { message: "fullName must be at least 2 characters long." })
+    .max(200, { message: "fullName can be at most 200 characters long." }),
+  businessEmail: z
+    .string({ message: "businessEmail is required!!" })
+    .min(1, { message: "businessEmail is required!!" })
+    .email({ message: "Invalid email format. e.g: john.doe@example.com" })
+    .regex(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/, {
+      message: "Invalid email format. e.g: john.doe@example.com",
+    }),
+  phoneNumber: z
+    .string({ message: "phoneNumber must be a string" })
+    .min(10, { message: "phoneNumber must be at least 10 characters long." })
+    .max(32, { message: "phoneNumber can be at most 32 characters long." })
+    .optional(),
+  companyName: z
+    .string({ message: "companyName is required!!" })
+    .min(1, { message: "companyName is required!!" })
+    .min(2, { message: "companyName must be at least 2 characters long." })
+    .max(200, { message: "companyName can be at most 200 characters long." }),
+  companyWebsite: z
+    .string({ message: "companyWebsite must be a string" })
+    .url({ message: "companyWebsite must be a valid URL" })
+    .max(2048, {
+      message: "companyWebsite can be at most 2048 characters long.",
+    })
+    .optional(),
+  businessAddress: z
+    .string({ message: "businessAddress must be a string" })
+    .max(500, {
+      message: "businessAddress can be at most 500 characters long.",
+    })
+    .optional(),
+  businessType: z
+    .string({ message: "businessType is required!!" })
+    .min(1, { message: "businessType is required!!" })
+    .max(200, { message: "businessType can be at most 200 characters long." }),
+  referralSource: z
+    .string({ message: "referralSource is required!!" })
+    .min(1, { message: "referralSource is required!!" })
+    .max(200, {
+      message: "referralSource can be at most 200 characters long.",
+    }),
+});
+
+// Schema for service item
+export const clientProjectServiceSchema = z.object({
+  name: z.string({ message: "service name is required!!" }),
+  childServices: z
+    .array(z.string(), { message: "childServices must be an array of strings" })
+    .default([]),
+});
+
+// Schema for industry item
+export const clientProjectIndustrySchema = z.object({
+  category: z.string({ message: "industry category is required!!" }),
+  subIndustries: z
+    .array(z.string(), {
+      message: "subIndustries must be an array of strings",
+    })
+    .default([]),
+});
+
+// Schema for technology item
+export const clientProjectTechnologySchema = z.object({
+  category: z.string({ message: "technology category is required!!" }),
+  technologies: z
+    .array(z.string(), {
+      message: "technologies must be an array of strings",
+    })
+    .min(1, { message: "At least one technology must be specified" }),
+});
+
+// Schema for feature item
+export const clientProjectFeatureSchema = z.object({
+  category: z.string({ message: "feature category is required!!" }),
+  features: z
+    .array(z.string(), { message: "features must be an array of strings" })
+    .min(1, { message: "At least one feature must be specified" }),
+});
+
+// Schema for discount
+export const clientProjectDiscountSchema = z.object({
+  type: z.enum(
+    [
+      "STARTUP_FOUNDER",
+      "VETERAN_OWNED_BUSINESS",
+      "NONPROFIT_ORGANIZATION",
+      "NOT_ELIGIBLE",
+    ],
+    { message: "Invalid discount type" },
+  ),
+  percent: z
+    .number({ message: "percent must be a number" })
+    .min(0, { message: "percent cannot be negative" })
+    .max(100, { message: "percent cannot exceed 100" }),
+  notes: z
+    .string({ message: "notes must be a string" })
+    .max(500, { message: "notes can be at most 500 characters long." })
+    .optional(),
+});
+
+// Schema for timeline
+export const clientProjectTimelineSchema = z.object({
+  option: z.enum(
+    [
+      "STANDARD_BUILD",
+      "PRIORITY_BUILD",
+      "ACCELERATED_BUILD",
+      "RAPID_BUILD",
+      "FAST_TRACK_BUILD",
+    ],
+    { message: "Invalid timeline option" },
+  ),
+  rushFeePercent: z
+    .number({ message: "rushFeePercent must be a number" })
+    .min(0, { message: "rushFeePercent cannot be negative" })
+    .max(100, { message: "rushFeePercent cannot exceed 100" }),
+  estimatedDays: z
+    .number({ message: "estimatedDays must be a number" })
+    .min(1, { message: "estimatedDays must be at least 1" }),
+  description: z
+    .string({ message: "description must be a string" })
+    .max(500, { message: "description can be at most 500 characters long." })
+    .optional(),
+});
+
+// Schema for estimate
+export const clientProjectEstimateSchema = z.object({
+  estimateAccepted: z.boolean({
+    message: "estimateAccepted must be a boolean",
+  }),
+  estimateFinalPriceMin: z
+    .number({ message: "estimateFinalPriceMin must be a number" })
+    .min(0, { message: "estimateFinalPriceMin cannot be negative" }),
+  estimateFinalPriceMax: z
+    .number({ message: "estimateFinalPriceMax must be a number" })
+    .min(0, { message: "estimateFinalPriceMax cannot be negative" }),
+});
+
+// Schema for service agreement
+export const clientProjectServiceAgreementSchema = z.object({
+  documentUrl: z
+    .string({ message: "documentUrl is required!!" })
+    .url({ message: "documentUrl must be a valid URL" })
+    .max(2048, { message: "documentUrl can be at most 2048 characters long." }),
+  agreementVersion: z
+    .string({ message: "agreementVersion must be a string" })
+    .max(100, {
+      message: "agreementVersion can be at most 100 characters long.",
+    })
+    .optional(),
+  accepted: z.boolean({ message: "accepted must be a boolean" }).default(true),
+  ipAddress: z
+    .string({ message: "ipAddress must be a string" })
+    .max(45, { message: "ipAddress can be at most 45 characters long." })
+    .optional(),
+  userAgent: z.string({ message: "userAgent must be a string" }).optional(),
+  locale: z
+    .string({ message: "locale must be a string" })
+    .max(35, { message: "locale can be at most 35 characters long." })
+    .optional(),
+});
+
+// Main schema for creating a project (matching visitor flow requirements)
+export const clientProjectCreateSchema = z.object({
+  details: clientProjectDetailsSchema,
+  services: z
+    .array(clientProjectServiceSchema, {
+      message: "services must be an array of service objects",
+    })
+    .min(1, { message: "At least one service must be selected" }),
+  industries: z
+    .array(clientProjectIndustrySchema, {
+      message: "industries must be an array of industry objects",
+    })
+    .min(1, { message: "At least one industry must be selected" }),
+  technologies: z
+    .array(clientProjectTechnologySchema, {
+      message: "technologies must be an array of technology objects",
+    })
+    .min(1, { message: "At least one technology category must be selected" }),
+  features: z
+    .array(clientProjectFeatureSchema, {
+      message: "features must be an array of feature objects",
+    })
+    .min(1, { message: "At least one feature category must be selected" }),
+  discount: clientProjectDiscountSchema,
+  timeline: clientProjectTimelineSchema,
+  estimate: clientProjectEstimateSchema,
+  serviceAgreement: clientProjectServiceAgreementSchema,
+  discordChatUrl: z
+    .string({ message: "discordChatUrl must be a string" })
+    .url({ message: "discordChatUrl must be a valid URL" })
+    .max(2048, {
+      message: "discordChatUrl can be at most 2048 characters long.",
+    })
+    .optional(),
+});
+
+// Schema for updating a project (all fields optional for partial updates)
+export const clientProjectUpdateSchema = z.object({
+  details: clientProjectDetailsSchema.partial().optional(),
+  services: z
+    .array(clientProjectServiceSchema, {
+      message: "services must be an array of service objects",
+    })
+    .min(1, { message: "At least one service must be selected" })
+    .optional(),
+  industries: z
+    .array(clientProjectIndustrySchema, {
+      message: "industries must be an array of industry objects",
+    })
+    .min(1, { message: "At least one industry must be selected" })
+    .optional(),
+  technologies: z
+    .array(clientProjectTechnologySchema, {
+      message: "technologies must be an array of technology objects",
+    })
+    .min(1, { message: "At least one technology category must be selected" })
+    .optional(),
+  features: z
+    .array(clientProjectFeatureSchema, {
+      message: "features must be an array of feature objects",
+    })
+    .min(1, { message: "At least one feature category must be selected" })
+    .optional(),
+  discount: clientProjectDiscountSchema.optional(),
+  timeline: clientProjectTimelineSchema.optional(),
+  estimate: clientProjectEstimateSchema.optional(),
+  discordChatUrl: z
+    .string({ message: "discordChatUrl must be a string" })
+    .url({ message: "discordChatUrl must be a valid URL" })
+    .max(2048, {
+      message: "discordChatUrl can be at most 2048 characters long.",
+    })
+    .optional(),
+});
+
+// ============================================
+// MODERATOR MANAGEMENT SCHEMAS
+// ============================================
+
+// ** Create moderator schema
+export const createModeratorSchema = z.object({
+  email: z
+    .string({ message: "email is required" })
+    .email({ message: "Invalid email format" })
+    .max(254, { message: "Email can be at most 254 characters long" }),
+  fullName: z
+    .string({ message: "fullName is required" })
+    .min(2, { message: "fullName must be at least 2 characters long" })
+    .max(100, { message: "fullName can be at most 100 characters long" }),
+});
+
+// ** Update moderator schema
+export const updateModeratorSchema = z.object({
+  fullName: z
+    .string({ message: "fullName must be a string" })
+    .min(2, { message: "fullName must be at least 2 characters long" })
+    .max(100, { message: "fullName can be at most 100 characters long" })
+    .optional(),
+  email: z
+    .string({ message: "email must be a string" })
+    .email({ message: "Invalid email format" })
+    .max(254, { message: "Email can be at most 254 characters long" })
+    .optional(),
+  phone: z
+    .string({ message: "phone must be a string" })
+    .max(32, { message: "phone can be at most 32 characters long" })
+    .optional(),
+});
+
+// ** Toggle moderator status schema
+export const toggleModeratorStatusSchema = z.object({
+  isActive: z.boolean({ message: "isActive must be a boolean" }),
+});
+
+// ** Assign moderator to project schema
+export const assignModeratorToProjectSchema = z.object({
+  moderatorId: z
+    .string({ message: "moderatorId is required" })
+    .min(1, { message: "moderatorId is required" }),
+});
+
+// ============================================
+// MILESTONE PAYMENT AGREEMENT SCHEMAS
+// ============================================
+
+// ** Create payment agreement schema
+export const createPaymentAgreementSchema = z.object({
+  agreementDocumentUrl: z
+    .string({ message: "agreementDocumentUrl is required" })
+    .url({ message: "agreementDocumentUrl must be a valid URL" })
+    .max(2048, {
+      message: "agreementDocumentUrl can be at most 2048 characters long",
+    }),
+  milestoneAmount: z
+    .number({ message: "milestoneAmount is required" })
+    .positive({ message: "milestoneAmount must be positive" })
+    .or(
+      z
+        .string()
+        .regex(/^\d+(\.\d{1,2})?$/, {
+          message: "milestoneAmount must be a valid decimal number",
+        })
+        .transform((val) => parseFloat(val)),
+    ),
+  distributionDetails: z
+    .record(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        percentage: z
+          .number()
+          .min(0, { message: "percentage must be at least 0" })
+          .max(100, { message: "percentage must be at most 100" })
+          .optional(),
+        amount: z
+          .number()
+          .min(0, { message: "amount must be at least 0" })
+          .optional(),
+      }),
+    )
+    .refine(
+      (details) => {
+        const totalPercentage = Object.values(details).reduce(
+          (sum, item) => sum + (item.percentage || 0),
+          0,
+        );
+        return totalPercentage <= 100;
+      },
+      { message: "Total percentage cannot exceed 100%" },
+    ),
+  status: z
+    .enum(["DRAFT", "ACTIVE", "COMPLETED", "CANCELLED"], {
+      message: "status must be one of: DRAFT, ACTIVE, COMPLETED, CANCELLED",
+    })
+    .optional(),
+  notes: z
+    .string()
+    .max(5000, { message: "notes can be at most 5000 characters long" })
+    .optional(),
+});
+
+// ** Update payment agreement schema (all fields optional)
+export const updatePaymentAgreementSchema = z.object({
+  agreementDocumentUrl: z
+    .string({ message: "agreementDocumentUrl must be a string" })
+    .url({ message: "agreementDocumentUrl must be a valid URL" })
+    .max(2048, {
+      message: "agreementDocumentUrl can be at most 2048 characters long",
+    })
+    .optional(),
+  milestoneAmount: z
+    .number({ message: "milestoneAmount must be a number" })
+    .positive({ message: "milestoneAmount must be positive" })
+    .or(
+      z
+        .string()
+        .regex(/^\d+(\.\d{1,2})?$/, {
+          message: "milestoneAmount must be a valid decimal number",
+        })
+        .transform((val) => parseFloat(val)),
+    )
+    .optional(),
+  distributionDetails: z
+    .record(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        percentage: z
+          .number()
+          .min(0, { message: "percentage must be at least 0" })
+          .max(100, { message: "percentage must be at most 100" })
+          .optional(),
+        amount: z
+          .number()
+          .min(0, { message: "amount must be at least 0" })
+          .optional(),
+      }),
+    )
+    .refine(
+      (details) => {
+        const totalPercentage = Object.values(details).reduce(
+          (sum, item) => sum + (item.percentage || 0),
+          0,
+        );
+        return totalPercentage <= 100;
+      },
+      { message: "Total percentage cannot exceed 100%" },
+    )
+    .optional(),
+  status: z
+    .enum(["DRAFT", "ACTIVE", "COMPLETED", "CANCELLED"], {
+      message: "status must be one of: DRAFT, ACTIVE, COMPLETED, CANCELLED",
+    })
+    .optional(),
+  notes: z
+    .string()
+    .max(5000, { message: "notes can be at most 5000 characters long" })
+    .optional(),
+});
+
+// ============================================
+// KPI MANAGEMENT SCHEMAS
+// ============================================
+
+// ** Assign KPI points schema
+export const assignKPIPointsSchema = z.object({
+  points: z
+    .number({ message: "points is required" })
+    .int({ message: "points must be an integer" })
+    .refine((val) => val !== 0, { message: "points cannot be zero" }),
+  note: z
+    .string({ message: "note is required" })
+    .min(5, { message: "note must be at least 5 characters long" })
+    .max(500, { message: "note can be at most 500 characters long" }),
+  projectId: z
+    .string({ message: "projectId must be a string" })
+    .uuid({ message: "projectId must be a valid UUID" })
+    .optional(), // Required for Moderator/Client, optional for Admin
+});
+
+// ============================================
+// PRICING MANAGEMENT SCHEMAS (Admin only)
+// ============================================
+
+// ** Update Service Category
+export const updateServiceCategorySchema = z.object({
+  basePrice: z
+    .number({ message: "basePrice must be a number" })
+    .positive({ message: "basePrice must be positive" })
+    .optional(),
+  description: z
+    .string()
+    .min(5, { message: "description must be at least 5 characters" })
+    .max(500, { message: "description can be at most 500 characters" })
+    .optional(),
+});
+
+// ** Create/Update Technology
+export const createTechnologySchema = z.object({
+  technology: z
+    .string({ message: "technology is required" })
+    .min(2, { message: "technology must be at least 2 characters" })
+    .max(100, { message: "technology can be at most 100 characters" }),
+  additionalCost: z
+    .number({ message: "additionalCost is required" })
+    .min(0, { message: "additionalCost must be at least 0" }),
+});
+
+export const updateTechnologySchema = z.object({
+  technology: z
+    .string()
+    .min(2, { message: "technology must be at least 2 characters" })
+    .max(100, { message: "technology can be at most 100 characters" })
+    .optional(),
+  additionalCost: z
+    .number({ message: "additionalCost must be a number" })
+    .min(0, { message: "additionalCost must be at least 0" })
+    .optional(),
+});
+
+// ** Create/Update Feature
+export const createFeatureSchema = z.object({
+  feature: z
+    .string({ message: "feature is required" })
+    .min(2, { message: "feature must be at least 2 characters" })
+    .max(200, { message: "feature can be at most 200 characters" }),
+  additionalCost: z
+    .number({ message: "additionalCost is required" })
+    .min(0, { message: "additionalCost must be at least 0" }),
+});
+
+export const updateFeatureSchema = z.object({
+  feature: z
+    .string()
+    .min(2, { message: "feature must be at least 2 characters" })
+    .max(200, { message: "feature can be at most 200 characters" })
+    .optional(),
+  additionalCost: z
+    .number({ message: "additionalCost must be a number" })
+    .min(0, { message: "additionalCost must be at least 0" })
+    .optional(),
+});
+
+// ** Bulk Update Schemas
+export const bulkUpdateServiceCategoriesSchema = z.object({
+  updates: z.array(
+    z.object({
+      id: z.string().uuid({ message: "id must be a valid UUID" }),
+      basePrice: z.number().positive({ message: "basePrice must be positive" }),
+      description: z.string().max(500).optional(),
+    }),
+  ),
+});
+
+export const bulkUpdateTechnologiesSchema = z.object({
+  updates: z.array(
+    z.object({
+      id: z.string().uuid({ message: "id must be a valid UUID" }),
+      technology: z.string().min(2).max(100).optional(),
+      additionalCost: z.number().min(0),
+    }),
+  ),
+});
+
+export const bulkUpdateFeaturesSchema = z.object({
+  updates: z.array(
+    z.object({
+      id: z.string().uuid({ message: "id must be a valid UUID" }),
+      feature: z.string().min(2).max(200).optional(),
+      additionalCost: z.number().min(0),
+    }),
+  ),
 });

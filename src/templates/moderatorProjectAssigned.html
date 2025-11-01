@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Project Assignment</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background-color: #2196f3;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 5px 5px 0 0;
+      }
+      .content {
+        background-color: #f9f9f9;
+        padding: 30px;
+        border: 1px solid #ddd;
+        border-top: none;
+        border-radius: 0 0 5px 5px;
+      }
+      .project-box {
+        background-color: #fff;
+        border: 2px solid #2196f3;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+      .project-detail {
+        margin: 10px 0;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .project-label {
+        font-weight: bold;
+        color: #2196f3;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #2196f3;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>📋 New Project Assigned!</h1>
+    </div>
+    <div class="content">
+      <h2>Hi {{MODERATOR_NAME}},</h2>
+
+      <p>
+        You have been assigned as the moderator for a new project. Here are the
+        details:
+      </p>
+
+      <div class="project-box">
+        <h3>Project Information</h3>
+        <div class="project-detail">
+          <span class="project-label">Company Name:</span><br />
+          {{COMPANY_NAME}}
+        </div>
+        <div class="project-detail">
+          <span class="project-label">Client Name:</span><br />
+          {{CLIENT_NAME}}
+        </div>
+        <div class="project-detail">
+          <span class="project-label">Client Email:</span><br />
+          {{CLIENT_EMAIL}}
+        </div>
+        <div class="project-detail">
+          <span class="project-label">Project Created:</span><br />
+          {{PROJECT_CREATED_DATE}}
+        </div>
+      </div>
+
+      <p><strong>Your Next Steps:</strong></p>
+      <ul>
+        <li>Review the project details and timeline</li>
+        <li>Set up or review project milestones</li>
+        <li>Coordinate with the assigned freelancers</li>
+        <li>Track progress and update milestone status</li>
+        <li>Communicate with the client as needed</li>
+      </ul>
+
+      <p style="text-align: center">
+        <a href="{{PROJECT_URL}}" class="button">View Project Details</a>
+      </p>
+
+      <p>
+        If you have any questions about this assignment, please contact the
+        administrator.
+      </p>
+
+      <p>
+        Best regards,<br />
+        <strong>The Admin Team</strong>
+      </p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2025 PLS Platform. All rights reserved.</p>
+    </div>
+  </body>
+</html>

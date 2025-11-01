@@ -163,8 +163,320 @@ export type THIREUSDATA = {
 };
 
 export type THIREUSRESPONSE = THIREUSDATA[];
-// ********* Freelancer
+
+// ============================================
+// VISITOR TYPES
+// ============================================
+
+export type TVISITOR_DETAILS = {
+  fullName: string;
+  businessEmail: string;
+  phoneNumber?: string;
+  companyName: string;
+  companyWebsite?: string;
+  businessAddress?: string;
+  businessType: string;
+  referralSource: string;
+};
+
+export type TVISITOR_SERVICE = {
+  name: string; // ServiceCategory enum
+  childServices: string[];
+};
+
+export type TVISITOR_INDUSTRY = {
+  category: string; // IndustryCategory enum
+  subIndustries: string[]; // IndustrySubIndustry enum array
+};
+
+export type TVISITOR_TECHNOLOGY = {
+  category: string; // TechnologyCategory enum
+  technologies: string[]; // TechnologyItem enum array
+};
+
+export type TVISITOR_FEATURE = {
+  category: string; // FeatureCategory enum
+  features: string[]; // FeatureItem enum array
+};
+
+export type TVISITOR_DISCOUNT = {
+  type: string; // DiscountType enum
+  percent: number;
+  notes?: string;
+};
+
+export type TVISITOR_TIMELINE = {
+  option: string; // TimelineOption enum
+  rushFeePercent: number;
+  estimatedDays: number;
+  description?: string;
+};
+
+export type TVISITOR_ESTIMATE = {
+  estimateAccepted: boolean;
+  estimateFinalPriceMin: number;
+  estimateFinalPriceMax: number;
+};
+
+export type TVISITOR_SERVICE_AGREEMENT = {
+  documentUrl: string;
+  agreementVersion?: string;
+  accepted: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+  locale?: string;
+};
+
+export type TVISITOR_CREATE = {
+  clientId?: string;
+  ipAddress?: string;
+  details: TVISITOR_DETAILS;
+  services?: TVISITOR_SERVICE[];
+  industries?: TVISITOR_INDUSTRY[];
+  technologies?: TVISITOR_TECHNOLOGY[];
+  features?: TVISITOR_FEATURE[];
+  discount?: TVISITOR_DISCOUNT;
+  timeline?: TVISITOR_TIMELINE;
+  estimate?: TVISITOR_ESTIMATE;
+  serviceAgreement?: TVISITOR_SERVICE_AGREEMENT;
+};
+
+export type TVISITOR = {
+  id: string;
+  clientId?: string;
+  ipAddress?: string;
+  details?: TVISITOR_DETAILS & { id: string };
+  services?: (TVISITOR_SERVICE & { id: string })[];
+  industries?: (TVISITOR_INDUSTRY & { id: string })[];
+  technologies?: (TVISITOR_TECHNOLOGY & { id: string })[];
+  features?: (TVISITOR_FEATURE & { id: string })[];
+  discount?: TVISITOR_DISCOUNT & { id: string };
+  timeline?: TVISITOR_TIMELINE & { id: string };
+  estimate?: TVISITOR_ESTIMATE & { id: string };
+  serviceAgreement?: TVISITOR_SERVICE_AGREEMENT & { id: string };
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+
+// ============================================
+// PROJECT TYPES
+// ============================================
+
+export type TPROJECT_DETAILS = TVISITOR_DETAILS;
+export type TPROJECT_SERVICE = TVISITOR_SERVICE;
+export type TPROJECT_INDUSTRY = TVISITOR_INDUSTRY;
+export type TPROJECT_TECHNOLOGY = TVISITOR_TECHNOLOGY;
+export type TPROJECT_FEATURE = TVISITOR_FEATURE;
+export type TPROJECT_DISCOUNT = TVISITOR_DISCOUNT;
+export type TPROJECT_TIMELINE = TVISITOR_TIMELINE;
+export type TPROJECT_ESTIMATE = TVISITOR_ESTIMATE;
+export type TPROJECT_SERVICE_AGREEMENT = TVISITOR_SERVICE_AGREEMENT;
+
+export type TMILESTONE_STATUS =
+  | "PLANNED"
+  | "IN_PROGRESS"
+  | "BLOCKED"
+  | "COMPLETED"
+  | "CANCELLED";
+export type TMILESTONE_PRIORITY = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type TMILESTONE_PHASE =
+  | "DISCOVERY"
+  | "DESIGN"
+  | "IMPLEMENTATION"
+  | "TESTING"
+  | "DEPLOYMENT";
+export type TMILESTONE_RISK_LEVEL = "LOW" | "MEDIUM" | "HIGH";
+
+export type TMILESTONE = {
+  id?: string;
+  projectId: string;
+  milestoneName: string;
+  description?: string;
+  deadline: Date | string;
+  progress?: number;
+  isMilestoneCompleted?: boolean;
+  status?: TMILESTONE_STATUS;
+  startedAt?: Date | string;
+  completedAt?: Date | string;
+  priority?: TMILESTONE_PRIORITY;
+  phase?: TMILESTONE_PHASE;
+  riskLevel?: TMILESTONE_RISK_LEVEL;
+  blocked?: boolean;
+  blockerReason?: string;
+  deliverableUrl?: string;
+  tags?: string[];
+  estimatedHours?: number;
+  actualHours?: number;
+  budgetEstimate?: number;
+  actualCost?: number;
+  assignedFreelancerId?: string; // NEW: Freelancer assignment
+  assigneeName?: string;
+  assigneeEmail?: string;
+  notes?: string;
+  approvedBy?: string;
+  approvedAt?: Date | string;
+};
+
+export type TPROJECT_CREATE = {
+  clientId: string;
+  visitorId?: string;
+  discordChatUrl?: string;
+  details: TPROJECT_DETAILS;
+  services?: TPROJECT_SERVICE[];
+  industries?: TPROJECT_INDUSTRY[];
+  technologies?: TPROJECT_TECHNOLOGY[];
+  features?: TPROJECT_FEATURE[];
+  discount?: TPROJECT_DISCOUNT;
+  timeline?: TPROJECT_TIMELINE;
+  estimate?: TPROJECT_ESTIMATE;
+  serviceAgreement?: TPROJECT_SERVICE_AGREEMENT;
+  milestones?: TMILESTONE[];
+};
+
+export type TPROJECT = {
+  id: string;
+  clientId: string;
+  visitorId?: string;
+  discordChatUrl?: string;
+  details?: TPROJECT_DETAILS & { id: string };
+  services?: (TPROJECT_SERVICE & { id: string })[];
+  industries?: (TPROJECT_INDUSTRY & { id: string })[];
+  technologies?: (TPROJECT_TECHNOLOGY & { id: string })[];
+  features?: (TPROJECT_FEATURE & { id: string })[];
+  discount?: TPROJECT_DISCOUNT & { id: string };
+  timeline?: TPROJECT_TIMELINE & { id: string };
+  estimate?: TPROJECT_ESTIMATE & { id: string };
+  serviceAgreement?: TPROJECT_SERVICE_AGREEMENT & { id: string };
+  milestones?: TMILESTONE[];
+  interestedFreelancers?: { id: string }[];
+  selectedFreelancers?: { id: string }[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+
+// ============================================
+// FREELANCER TYPES
+// ============================================
+
+export type TFREELANCER_DETAILS = {
+  country: string;
+  email: string;
+  fullName: string;
+  professionalLinks: string[]; // Array of URLs
+  timeZone: string;
+  eliteSkillCards: string[];
+  tools: string[]; // ToolstackItem enum array
+  otherNote?: string;
+  selectedIndustries: string[]; // FreelancerIndustry enum array
+  primaryDomain: string;
+};
+
+export type TFREELANCER_DOMAIN_EXPERIENCE = {
+  roleTitle: string;
+  years: number;
+};
+
+export type TFREELANCER_AVAILABILITY = {
+  weeklyCommitmentMinHours: number;
+  weeklyCommitmentMaxHours?: number;
+  weeklyCommitmentIsPlus: boolean;
+  timeZone: string;
+  workingWindows: string[]; // AvailabilityWindow enum array
+  collaborationTools: string[]; // CollaborationTool enum array
+  preferredTeamStyle: string; // PreferredTeamStyle enum
+  liveScreenSharingPreference: string; // LiveScreenSharingPreference enum
+  liveScreenSharingNotes?: string;
+  shortTermAvailabilityExceptions?: string;
+};
+
+export type TFREELANCER_SOFT_SKILLS = {
+  preferredCollaborationStyle: string; // PreferredCollaborationStyle enum
+  communicationFrequency: string; // CommunicationFrequencyPreference enum
+  conflictResolutionStyle: string; // ConflictResolutionStyle enum
+  languages: string[]; // LanguageFluency enum array
+  otherLanguage?: string;
+  teamVsSoloPreference: string; // TeamVsSoloPreference enum
+};
+
+export type TFREELANCER_CERTIFICATION = {
+  certificateName: string;
+  certificateUrl: string;
+};
+
+export type TFREELANCER_PROJECT_BIDDING = {
+  compensationPreference: string; // ProjectCompensationPreference enum
+  smallProjectMin?: number;
+  smallProjectMax?: number;
+  midProjectMin?: number;
+  midProjectMax?: number;
+  longTermMin?: number;
+  longTermMax?: number;
+  milestonePaymentTerms: string; // MilestonePaymentTerms enum
+  customPaymentTerms?: string;
+  proposalSubmission: string; // ProposalSubmissionPreference enum
+};
+
+export type TFREELANCER_LEGAL_AGREEMENTS = {
+  projectSpecificNdaAccepted: boolean;
+  projectSpecificNdaUrl: string;
+  workForHireAccepted: boolean;
+  workForHireUrl: string;
+  projectScopeDeliverablesAccepted: boolean;
+  projectScopeDeliverablesUrl: string;
+  paymentTermsAccepted: boolean;
+  paymentTermsUrl: string;
+  securityComplianceAccepted: boolean;
+  securityComplianceUrl?: string;
+  nonSolicitationAccepted: boolean;
+  nonSolicitationUrl: string;
+  codeOfConductAccepted: boolean;
+  codeOfConductUrl: string;
+  projectIpBoundariesAccepted: boolean;
+  projectIpBoundariesUrl: string;
+  identityDocType?: string; // LegalIdentityDocType enum
+  identityDocUrl?: string;
+  taxDocType?: string; // LegalTaxDocType enum
+  taxDocUrl?: string;
+  proofOfAddressProvided: boolean;
+  proofOfAddressUrl?: string;
+  interestedInWorkAuthorization: boolean;
+  finalCertificationAccepted: boolean;
+  finalCertificationAcceptedAt?: Date | string;
+  ipAddress?: string;
+  userAgent?: string;
+  locale?: string;
+};
+
+export type TFREELANCER_CREATE = {
+  details: TFREELANCER_DETAILS;
+  domainExperiences?: TFREELANCER_DOMAIN_EXPERIENCE[];
+  availabilityWorkflow?: TFREELANCER_AVAILABILITY;
+  softSkills?: TFREELANCER_SOFT_SKILLS;
+  certifications?: TFREELANCER_CERTIFICATION[];
+  projectBidding?: TFREELANCER_PROJECT_BIDDING;
+  legalAgreements?: TFREELANCER_LEGAL_AGREEMENTS;
+};
+
 export type TFREELANCER = {
+  id: string;
+  details?: TFREELANCER_DETAILS & { id: string };
+  domainExperiences?: (TFREELANCER_DOMAIN_EXPERIENCE & { id: string })[];
+  availabilityWorkflow?: TFREELANCER_AVAILABILITY & { id: string };
+  softSkills?: TFREELANCER_SOFT_SKILLS & { id: string };
+  certifications?: (TFREELANCER_CERTIFICATION & { id: string })[];
+  projectBidding?: TFREELANCER_PROJECT_BIDDING & { id: string };
+  legalAgreements?: TFREELANCER_LEGAL_AGREEMENTS & { id: string };
+  interestedProjects?: { id: string }[];
+  selectedProjects?: { id: string }[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+
+// Legacy types (deprecated - for backward compatibility during migration)
+export type TFREELANCER_OLD = {
   name: string;
   email: string;
   phone: string;
@@ -175,90 +487,20 @@ export type TFREELANCER = {
   address: string;
   detail: string;
   niche: string;
-  createdAt: string; // ISO date string format
+  createdAt: string;
   trashedBy: string | null;
   trashedAt: string | null;
 };
-export interface TFREELANCERPROFILE {
-  whoYouAre: {
-    fullName: string;
-    email: string;
-    timeZone?: string | null;
-    country?: string | null;
-    professionalLinks?: {
-      github: string;
-      gitlab: string;
-      dribbble: string;
-      behance: string;
-      stackoverflow: string;
-      medium: string;
-      kaggle: string;
-      personalSite: string;
-      linkedin: string;
-    };
-    phone?: string | null;
-  };
-  coreRole?: {
-    primaryDomain: string;
-  };
-  eliteSkillCards?: {
-    selectedSkills: string[];
-  };
-  toolstackProficiency?: {
-    selectedTools: string[];
-  };
-  domainExperience?: {
-    roles: {
-      title: string;
-      years: number;
-    }[];
-  };
-  industryExperience?: {
-    selectedIndustries: string[];
-  };
-  availabilityWorkflow?: {
-    weeklyCommitment: number;
-    workingHours: string[];
-    collaborationTools: string[];
-    teamStyle: string;
-    screenSharing: string;
-    availabilityExceptions: string;
-  };
-  softSkills?: {
-    collaborationStyle: string;
-    communicationFrequency: string;
-    conflictResolution: string;
-    languages: string[];
-    teamVsSolo: string;
-  };
-  certifications?: {
-    certificates: string[];
-  };
-  projectQuoting?: {
-    compensationPreference: string;
-    smallProjectPrice: number;
-    midProjectPrice: number;
-    longTermPrice: number;
-    milestoneTerms: string;
-    willSubmitProposals: string;
-  };
-  legalAgreements?: {
-    agreements: {
-      id: string;
-      accepted: boolean;
-    }[];
-    identityVerification?: {
-      idType: string;
-      taxDocType: string;
-      addressVerified: boolean;
-    };
-    workAuthorization?: {
-      interested: boolean;
-    };
-  };
-}
 
-export type TPROJECTSTATUS = "PENDING" | "CANCELLED" | "ONGOING" | "COMPLETED";
+// ============================================
+// LEGACY TYPES (DEPRECATED - for backward compatibility)
+// ============================================
+
+export type TPROJECTSTATUS_OLD =
+  | "PENDING"
+  | "CANCELLED"
+  | "ONGOING"
+  | "COMPLETED";
 export type TKPIRANK =
   | "BRONZE"
   | "SILVER"
@@ -268,57 +510,29 @@ export type TKPIRANK =
   | "CROWN"
   | "ACE"
   | "CONQUERER";
-export type TDIFFICULTYLEVEL = "EASY" | "MEDIUM" | "HARD";
-export type TPROJECTTYPE = "INHOUSE" | "OUTSOURCE";
-export type TUPDATE_PROJECT = {
+export type TDIFFICULTYLEVEL_OLD = "EASY" | "MEDIUM" | "HARD";
+export type TPROJECTTYPE_OLD = "INHOUSE" | "OUTSOURCE";
+
+// Old project types (deprecated)
+export type TUPDATE_PROJECT_OLD = {
   title: string;
   detail: string;
-  projectType: TPROJECTTYPE;
+  projectType: TPROJECTTYPE_OLD;
   niche: string;
   bounty: number;
   deadline: string;
-  projectStatus: TPROJECTSTATUS;
+  projectStatus: TPROJECTSTATUS_OLD;
   progressPercentage: number;
   isDeadlineNeedToBeExtend: boolean;
   difficultyLevel: "EASY" | "MEDIUM" | "HARD";
 };
 
-export type TPROJECT = TUPDATE_PROJECT & {
+export type TPROJECT_OLD = TUPDATE_PROJECT_OLD & {
   clientWhoPostedThisProjectForeignId?: string;
   selectedFreelancersForThisProject: string[];
   interestedFreelancerWhoWantToWorkOnThisProject: string[];
   commentByClientAfterProjectCompletion?: string;
   starsByClientAfterProjectCompletion?: string;
-};
-export type TFILTEREDPROJECT = {
-  trashedAt: null;
-  trashedBy: null;
-  projectType?: TPROJECTTYPE;
-  projectStatus?: TPROJECTSTATUS;
-  difficultyLevel?: TDIFFICULTYLEVEL;
-  niche?: string;
-};
-
-// Define types for query parameters
-export type TGETPROJECTSQUERY = {
-  page?: string;
-  limit?: string;
-  difficultyLevel?: TDIFFICULTYLEVEL;
-  createdAtOrder?: "oldest" | "latest" | "";
-  bountyOrder?: "lowest" | "highest" | "";
-  nicheName?: string;
-};
-export interface TGETFULLPROJECTQUERY extends TGETPROJECTSQUERY {
-  projectType?: TPROJECTTYPE | "";
-  projectStatus?: TPROJECTSTATUS | "";
-}
-
-// Define filters type
-
-// Define type for sorting
-export type TSORTORDER = {
-  createdAt?: "asc" | "desc";
-  bounty?: "asc" | "desc";
 };
 
 // ** type for blog post
@@ -329,168 +543,3 @@ export type TBLOGPOST = {
   blogBody: string;
   isPublished?: boolean;
 };
-export type ProjectRequestCreateDTO = {
-  registerYourself: {
-    fullName: string;
-    businessEmail: string;
-    phoneNumber?: string;
-    companyName?: string;
-    companyWebsite?: string;
-    businessAddress?: string;
-    businessType?: string;
-    referralSource?: string;
-  };
-
-  services: {
-    category: string;
-    service: string;
-  }[];
-
-  industries: {
-    category: string;
-    industry: string;
-  }[];
-
-  technologies: {
-    category: string;
-    technology: string;
-  }[];
-
-  features: {
-    category: string;
-    feature: string;
-  }[];
-
-  specialOffers: {
-    discounts: string[];
-    appliedDiscount: number;
-  };
-
-  timeline: string;
-
-  budget: {
-    paymentMethod: string;
-  };
-
-  estimate: {
-    accepted: boolean;
-    comparisonVisible: boolean;
-    finalPrice: {
-      min: number;
-      max: number;
-    };
-    basePrice: {
-      min: number;
-      max: number;
-    };
-    discount: {
-      percentage: number;
-      amount: {
-        min: number;
-        max: number;
-      };
-    };
-    rushFee: {
-      percentage: number;
-      amount: {
-        min: number;
-        max: number;
-      };
-    };
-  };
-
-  agreement: {
-    accepted: boolean;
-  };
-
-  proceedOptions: {
-    selectedOption: string;
-    completed: boolean;
-  };
-};
-
-// ProjectBuilder Types
-export type TPROJECTBUILDER_PRIORITY = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-export type TPROJECTBUILDER_STATUS =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "IN_REVIEW"
-  | "APPROVED"
-  | "REJECTED"
-  | "IN_PROGRESS"
-  | "COMPLETED";
-
-export type TPROJECTBUILDER = {
-  id?: string;
-  projectName: string;
-  projectDescription: string;
-  projectType: string;
-  technologies: string[];
-  features: string[];
-  budget?: number | null;
-  timeline?: string | null;
-  priority?: TPROJECTBUILDER_PRIORITY;
-  status?: TPROJECTBUILDER_STATUS;
-  clientName: string;
-  clientEmail: string;
-  clientPhone?: string | null;
-  clientCompany?: string | null;
-  additionalNotes?: string | null;
-  createdAt?: Date;
-  updatedAt?: Date;
-  trashedBy?: string;
-  trashedAt?: Date;
-  interestedFreelancers?: Array<{
-    uid: string;
-    username: string;
-    fullName: string;
-    email: string;
-  }>;
-  selectedFreelancers?: Array<{
-    uid: string;
-    username: string;
-    fullName: string;
-    email: string;
-  }>;
-};
-
-export type TPROJECTBUILDER_CREATE = Omit<
-  TPROJECTBUILDER,
-  | "id"
-  | "createdAt"
-  | "updatedAt"
-  | "trashedBy"
-  | "trashedAt"
-  | "interestedFreelancers"
-  | "selectedFreelancers"
->;
-
-// ProjectBuilder Freelancer Assignment Types
-export type TPROJECTBUILDER_FREELANCER_ASSIGNMENT = {
-  interestedFreelancerIds?: string[];
-  selectedFreelancerIds?: string[];
-  freelancerUid?: string;
-  freelancerUsername?: string;
-};
-
-// Visitors Types
-export type TVISITORS = {
-  id?: string;
-  fullName: string;
-  businessEmail: string;
-  phoneNumber?: string | null;
-  companyName?: string | null;
-  companyWebsite?: string | null;
-  businessAddress: string;
-  businessType: string;
-  referralSource: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  trashedBy?: string;
-  trashedAt?: Date;
-};
-
-export type TVISITORS_CREATE = Omit<
-  TVISITORS,
-  "id" | "createdAt" | "updatedAt" | "trashedBy" | "trashedAt"
->;

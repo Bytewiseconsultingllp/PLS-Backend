@@ -221,6 +221,7 @@ bun run start
 ## Step 8: Verify Installation
 
 1. **Check if the server is running:**
+
    - Open your browser and go to `http://localhost:4000`
    - You should see a response from the server
 
@@ -287,6 +288,7 @@ The application provides various API endpoints for:
 ### Common Issues:
 
 1. **Database Connection Error:**
+
    - Verify PostgreSQL is running
    - Check DATABASE_URL in .env file
    - Ensure database exists
@@ -294,16 +296,19 @@ The application provides various API endpoints for:
    - **Windows specific**: Check if PostgreSQL is in your PATH environment variable
 
 2. **Port Already in Use:**
+
    - Change PORT in .env file
    - **macOS/Linux**: Kill process using the port: `lsof -ti:4000 | xargs kill -9`
    - **Windows**: Kill process using the port: `netstat -ano | findstr :4000` then `taskkill /PID <PID> /F`
 
 3. **Prisma Client Error:**
+
    - Run `bun run db:generate`
    - Check if migrations are up to date
    - **Windows specific**: Ensure you're running Command Prompt as Administrator for database operations
 
 4. **Environment Variables:**
+
    - Ensure all required variables are set in .env
    - Restart the server after changing .env
    - **Windows specific**: Make sure .env file is in the project root directory

@@ -12923,11 +12923,13 @@ I have successfully created a new `/freelancer` endpoint for freelancer registra
 ### 📋 **What Was Implemented**
 
 1. **Validation Schema** (`src/validation/zod.ts`)
+
    - Added `freelancerRegistrationSchema` that validates the exact structure from the JSON file
    - Comprehensive validation for all nested objects and arrays
    - Proper type checking for all fields
 
 2. **Controller** (`src/controllers/freeLancerController/freelancerRegistrationController.ts`)
+
    - `registerFreelancer` - Main registration endpoint
    - `getAllFreelancerRegistrations` - Admin endpoint to get all registrations
    - `getSingleFreelancerRegistration` - Admin endpoint to get single registration
@@ -12937,6 +12939,7 @@ I have successfully created a new `/freelancer` endpoint for freelancer registra
    - `untrashFreelancerRegistration` - Admin endpoint to restore from trash
 
 3. **Router** (`src/routers/freelancerRouter/freeLancerRouter.ts`)
+
    - Added new routes to existing freelancer router
    - Proper middleware integration (validation, rate limiting, authentication)
    - Admin-only routes for management

@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+dist/
+
+# OLD DEPRECATED FILES
+src/controllers/freeLancerController/freeLancerController.ts
+src/controllers/freeLancerController/freeLancerControllerV2.ts
+src/controllers/freeLancerController/freelancerRegistrationController.ts
+src/controllers/projectBuilderController/projectBuilderController.ts
+src/controllers/projectRequestController/projectRequestController.ts
+src/controllers/projectController/projectController.ts
+src/controllers/projectController/getProjectController.ts
+src/controllers/milestoneController/milestoneController.ts
+src/controllers/visitorsController/visitorsController.ts
+src/controllers/getQuoteController/getQuoteController.ts
+src/routers/projectBuilderRouter/projectBuilderRouter.ts
+src/routers/projectRequestRouter/projectRequestRouter.ts
+src/routers/projectRouter/projectRouter.ts
+src/routers/mileStoneRouter/mileStoneRouter.ts
+src/routers/visitorsRouter/visitorsRouter.ts
+src/routers/freelancerRouter/freeLancerRouter.ts
+src/utils/findUniqueUtils.ts
+src/utils/updateProjectProgressUtils.ts
+

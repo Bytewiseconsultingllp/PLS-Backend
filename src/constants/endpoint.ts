@@ -10,11 +10,14 @@ export default {
   CONSULTATIONROUTE: `/consultation`,
   HIREUSROUTE: `/hireUs`,
   FREELANCER: `/freelancer`,
-  PROJECT: `/project`,
+  PROJECT: `/projects`, // Changed to plural for REST conventions
   MILESTONE: `/milestone`,
   BLOG: `/blog`,
   PROJECTREQUESTROUTE: `/projectRequest`,
   PROJECTBUILDERROUTE: `/project-builder`,
   VISITORSROUTE: `/visitors`,
   PAYMENTROUTE: `/payment`,
+  ADMINROUTE: `/admin`, // Admin-only routes
+  ADMINMODERATORROUTE: `/admin/moderators`,
+  MODERATORROUTE: `/moderator`,
 };

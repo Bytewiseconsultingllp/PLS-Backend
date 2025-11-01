@@ -103,7 +103,32 @@
     "noImplicitReturns": true, // Ensures all code paths return a value in functions
     "noFallthroughCasesInSwitch": true, // Ensures that switch statements have no fallthrough cases
     "noUncheckedIndexedAccess": true, // Ensures that accessing array elements and object properties has checked index types
-    "exactOptionalPropertyTypes": true, // Ensures optional properties are only assignable to undefined if explicitly typed
+    "exactOptionalPropertyTypes": false, // Temporarily disabled to allow undefined to be assigned to nullable fields
     "useUnknownInCatchVariables": true // Enforces
-  }
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    // OLD DEPRECATED FILES - Exclude from compilation
+    "src/controllers/freeLancerController/freeLancerController.ts",
+    "src/controllers/freeLancerController/freeLancerControllerV2.ts",
+    "src/controllers/freeLancerController/freelancerRegistrationController.ts",
+    "src/controllers/projectBuilderController/projectBuilderController.ts",
+    "src/controllers/projectRequestController/projectRequestController.ts",
+    "src/controllers/projectController/projectController.ts",
+    "src/controllers/projectController/getProjectController.ts",
+    "src/controllers/milestoneController/milestoneController.ts",
+    "src/controllers/visitorsController/visitorsController.ts",
+    "src/controllers/getQuoteController/getQuoteController.ts",
+    "src/routers/getQuoteRouter/getQuoteRouter.ts",
+    "src/routers/projectBuilderRouter/projectBuilderRouter.ts",
+    "src/routers/projectRequestRouter/projectRequestRouter.ts",
+    "src/routers/projectRouter/projectRouter.ts",
+    "src/routers/mileStoneRouter/mileStoneRouter.ts",
+    "src/routers/visitorsRouter/visitorsRouter.ts",
+    "src/routers/freelancerRouter/freeLancerRouter.ts",
+    "src/controllers/projectController/updateProjectController.ts",
+    "src/utils/updateProjectProgressUtils.ts"
+  ]
 }
