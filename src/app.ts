@@ -30,7 +30,7 @@ app.use(
 app.get("/", (req, res) => {
   const demo: string = req.body;
   console.log(demo);
-  res.send("<h1>Hello World</h1>");
+  res.send("<h1>Hello World 2 nov</h1>");
 });
 
 // ** STRIPE WEBHOOK - Must use raw body for signature verification **
