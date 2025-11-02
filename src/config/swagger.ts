@@ -23,7 +23,7 @@ const swaggerDefinition = {
       description: "Development server",
     },
     {
-      url: `https://api.plsbackend.com${BASEURL}`,
+      url: `https://api.primelogicsol.com${BASEURL}`,
       description: "Production server",
     },
   ],
