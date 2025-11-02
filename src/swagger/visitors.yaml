@@ -468,11 +468,11 @@ paths:
                  example: STANDARD_BUILD
                  description: |
                    Timeline build option:
-                  - STANDARD_BUILD: Normal timeline (0% rush fee)
-                  - PRIORITY_BUILD: Faster delivery (10-15% rush fee)
-                  - ACCELERATED_BUILD: Much faster (20-25% rush fee)
-                  - RAPID_BUILD: Very fast (30-35% rush fee)
-                  - FAST_TRACK_BUILD: Fastest possible (40-50% rush fee)
+                    - STANDARD_BUILD: Normal timeline (0% rush fee)
+                    - PRIORITY_BUILD: Faster delivery (10-15% rush fee)
+                    - ACCELERATED_BUILD: Much faster (20-25% rush fee)
+                    - RAPID_BUILD: Very fast (30-35% rush fee)
+                    - FAST_TRACK_BUILD: Fastest possible (40-50% rush fee)
                rushFeePercent:
                  type: number
                  example: 0
@@ -519,23 +519,23 @@ paths:
        **Final step** - Visitor accepts service agreement. System automatically generates a personalized PDF agreement, uploads it to Cloudinary, and emails a copy to the visitor.
 
 
-      **What happens:**
-      1. Validates visitor has completed all previous steps (details, estimate, etc.)
-      2. Generates PDF with client service agreement including:
-         - Client name and pricing
-         - Platform terms & conditions
-         - Service terms
-         - Payment terms (full upfront, no refunds)
-         - IP ownership
-         - Liability limitations
-         - Dispute resolution
-      3. Uploads PDF to Cloudinary
-      4. Stores document URL in database with audit trail
-      5. Emails copy to visitor
+        **What happens:**
+        1. Validates visitor has completed all previous steps (details, estimate, etc.)
+        2. Generates PDF with client service agreement including:
+          - Client name and pricing
+          - Platform terms & conditions
+          - Service terms
+          - Payment terms (full upfront, no refunds)
+          - IP ownership
+          - Liability limitations
+          - Dispute resolution
+        3. Uploads PDF to Cloudinary
+        4. Stores document URL in database with audit trail
+        5. Emails copy to visitor
 
 
-      **Note:** Estimate must be calculated (Step 7) before accepting agreement.
-      After accepting this agreement, visitor can proceed to register as a client.
+        **Note:** Estimate must be calculated (Step 7) before accepting agreement.
+        After accepting this agreement, visitor can proceed to register as a client.
      parameters:
        - name: visitorId
          in: path
