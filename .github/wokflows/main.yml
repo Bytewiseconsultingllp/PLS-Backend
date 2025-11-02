@@ -1,0 +1,42 @@
+name: Deploy Backend using Bun and PM2
+
+on:
+  push:
+    branches:
+      - working-stable
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd ${{ secrets.APP_PATH }}
+            git pull origin main
+            echo "Adding Bun to PATH..."
+            export PATH="/home/primelogicsol/.bun/bin:$PATH"
+
+            echo "Installing dependencies using Bun..."
+            bun install
+            bun run build
+            
+            echo "Restarting PM2 service..."
+            pm2 restart pls-backend-upgraded
+
+            echo "✅ Deployment complete and changes reflected!"
