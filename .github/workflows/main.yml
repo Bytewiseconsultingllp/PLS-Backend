@@ -28,7 +28,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd ${{ secrets.APP_PATH }}
-
+            git pull origin main
             echo "Adding Bun to PATH..."
             export PATH="/home/primelogicsol/.bun/bin:$PATH"
 
