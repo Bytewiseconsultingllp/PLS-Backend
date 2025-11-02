@@ -3,7 +3,7 @@ name: Deploy Backend using Bun and PM2
 on:
   push:
     branches:
-      - main
+      - working-stable
 
 jobs:
   deploy:
