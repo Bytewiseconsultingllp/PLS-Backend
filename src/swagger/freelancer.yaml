@@ -1,4 +1,133 @@
 paths:
+  /freelancer/accept-platform-agreement:
+    post:
+      tags:
+        - Freelancer
+      summary: Accept platform agreement with PDF generation
+      description: |
+        **Step 1 of freelancer registration** - Accept platform agreement. System automatically generates a personalized PDF agreement, uploads it to Cloudinary, and emails a copy to the freelancer.
+
+        **What happens:**
+        1. Generates PDF with freelancer platform agreement including:
+           - Freelancer name and country
+           - Independent contractor status
+           - Payment terms
+           - Professional conduct expectations
+           - IP ownership rules
+           - Confidentiality & NDA
+           - Non-solicitation & non-circumvention
+           - Work authorization & compliance
+           - Liability limitations
+           - Dispute resolution
+           - Account suspension/termination rules
+        2. Uploads PDF to Cloudinary
+        3. Stores document URL with audit trail (IP, timestamp, user agent)
+        4. Emails copy to freelancer
+
+        **Note:** This should be completed BEFORE the full freelancer registration. The frontend can store the documentUrl and include it in the registration payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - freelancerEmail
+                - fullName
+                - country
+                - accepted
+              properties:
+                freelancerEmail:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                  description: Freelancer's email address
+                fullName:
+                  type: string
+                  example: John Doe
+                  minLength: 2
+                  maxLength: 200
+                  description: Freelancer's full name
+                country:
+                  type: string
+                  example: USA
+                  minLength: 2
+                  maxLength: 100
+                  description: Freelancer's country of residence
+                accepted:
+                  type: boolean
+                  example: true
+                  description: Must be true to proceed. Freelancer confirms they have read and agree to the platform agreement.
+      responses:
+        "200":
+          description: Platform agreement accepted successfully. PDF generated, sent via email, and available for download.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Platform agreement accepted successfully. PDF generated and sent to your email.
+                  data:
+                    type: object
+                    properties:
+                      documentUrl:
+                        type: string
+                        example: https://res.cloudinary.com/your-cloud/raw/upload/legal_agreements/FREELANCER_PLATFORM_AGREEMENT_john_example_com_1698765432.pdf
+                        description: Cloudinary URL to the generated PDF agreement
+                      agreementVersion:
+                        type: string
+                        example: "1.0"
+                        description: Version of the agreement template
+                      pdfBase64:
+                        type: string
+                        example: JVBERi0xLjMKJcTl8uXrp/Og0MTGCjQgMCBvYmoKPDwgL0xlbmd0aCA1...
+                        description: Base64-encoded PDF file for immediate download by frontend
+                      fileName:
+                        type: string
+                        example: FREELANCER-PLATFORM-AGREEMENT_john_example_com_1698765432.pdf
+                        description: Suggested filename for download
+                      acceptedAt:
+                        type: string
+                        format: date-time
+                        example: "2025-11-02T10:30:00.000Z"
+                        description: Timestamp when agreement was accepted
+                      message:
+                        type: string
+                        example: You can now proceed with your freelancer registration.
+        "400":
+          description: Bad request - missing required fields or agreement not accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    examples:
+                      - Email, full name, and country are required
+                      - You must accept the platform agreement to proceed
+        "500":
+          description: Server error during PDF generation or upload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Failed to process platform agreement
+
   /freelancer/register:
     post:
       tags:
@@ -2001,3 +2130,5 @@ paths:
                     example: false
                   message:
                     type: string
+
+

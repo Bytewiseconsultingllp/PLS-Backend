@@ -1724,3 +1724,39 @@ export const bulkUpdateFeaturesSchema = z.object({
     }),
   ),
 });
+
+// ** Agreement Acceptance Schemas
+export const acceptVisitorServiceAgreementSchema = z.object({
+  accepted: z
+    .boolean({ message: "accepted must be a boolean" })
+    .refine((val) => val === true, {
+      message: "You must accept the service agreement to proceed",
+    }),
+});
+
+export const acceptFreelancerPlatformAgreementSchema = z.object({
+  freelancerEmail: z
+    .string({ message: "freelancerEmail is required!!" })
+    .min(1, { message: "freelancerEmail is required!!" })
+    .email({ message: "Invalid email format. e.g: john.doe@example.com" })
+    .regex(/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/, {
+      message: "Invalid email format. e.g: john.doe@example.com",
+    }),
+  fullName: z
+    .string({ message: "fullName is required!!" })
+    .min(1, { message: "fullName is required!!" })
+    .min(2, { message: "Full name must be at least 2 characters long" })
+    .max(200, { message: "Full name can be at most 200 characters long" }),
+  country: z
+    .string({ message: "country is required!!" })
+    .min(1, { message: "country is required!!" })
+    .min(2, { message: "Country must be at least 2 characters long" })
+    .max(100, { message: "Country can be at most 100 characters long" }),
+  accepted: z
+    .boolean({ message: "accepted must be a boolean" })
+    .refine((val) => val === true, {
+      message: "You must accept the platform agreement to proceed",
+    }),
+});
+
+
