@@ -12,7 +12,6 @@ import type {
   TVISITOR_FEATURE,
   TVISITOR_DISCOUNT,
   TVISITOR_TIMELINE,
-  TVISITOR_SERVICE_AGREEMENT,
 } from "../types";
 import { httpResponse } from "../utils/apiResponseUtils";
 import { asyncHandler } from "../utils/asyncHandlerUtils";
@@ -484,11 +483,13 @@ export default {
 
   /**
    * Step 8: Add service agreement to draft
+   * Generates a new PDF agreement specific to this draft/project
    */
   addDraftServiceAgreement: asyncHandler(async (req: _Request, res) => {
     const { draftId } = req.params;
     const clientId = req.userFromToken?.uid;
-    const agreement = req.body as TVISITOR_SERVICE_AGREEMENT;
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.get("user-agent");
 
     if (!clientId) {
       throw { status: UNAUTHORIZEDCODE, message: "Client ID is required" };
@@ -522,18 +523,61 @@ export default {
       };
     }
 
+    // Verify required data exists
+    if (!draft.details || !draft.estimate) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Draft details and estimate are required",
+      };
+    }
+
+    // Import legal agreement service
+    const { legalAgreementService, AgreementType } = await import(
+      "../services/legalAgreementService"
+    );
+
+    type ClientServiceAgreementData =
+      import("../services/legalAgreementService").ClientServiceAgreementData;
+
+    // Prepare agreement data
+    const agreementData: ClientServiceAgreementData = {
+      recipientName: draft.details.fullName,
+      recipientEmail: draft.details.businessEmail,
+      estimatedPriceMin: Number(draft.estimate.estimateFinalPriceMin),
+      estimatedPriceMax: Number(draft.estimate.estimateFinalPriceMax),
+      ipAddress: ipAddress || "unknown",
+      userAgent: userAgent || "unknown",
+      acceptedAt: new Date(),
+    };
+
+    // Generate and store agreement (creates PDF, uploads to Cloudinary, sends email)
+    const result = await legalAgreementService.createAndStoreAgreement(
+      AgreementType.CLIENT_SERVICE,
+      agreementData,
+    );
+
+    // Store agreement in draft
     const updatedDraft =
-      await clientProjectDraftService.upsertDraftServiceAgreement(
-        draftId,
-        agreement,
-      );
+      await clientProjectDraftService.upsertDraftServiceAgreement(draftId, {
+        documentUrl: result.documentUrl,
+        agreementVersion: result.agreementVersion,
+        accepted: true,
+        ipAddress,
+        userAgent,
+      });
 
     httpResponse(
       req,
       res,
       SUCCESSCODE,
-      "Service agreement accepted successfully. You can now finalize your project.",
-      updatedDraft,
+      "Service agreement generated and accepted successfully. PDF sent to your email. You can now finalize your project.",
+      {
+        draft: updatedDraft,
+        documentUrl: result.documentUrl,
+        agreementVersion: result.agreementVersion,
+        pdfBase64: result.pdfBase64,
+        fileName: result.fileName,
+      },
     );
   }),
 

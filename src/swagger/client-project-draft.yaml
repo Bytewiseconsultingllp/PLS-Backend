@@ -751,10 +751,19 @@ paths:
     post:
       tags:
         - Client Project Draft
-      summary: Step 8 - Accept service agreement
+      summary: Step 8 - Generate and accept service agreement
       description: |
-        Accept the service agreement for the draft.
+        **Automatically generates** a custom PDF service agreement for this draft and sends it via email.
+
+        This endpoint:
+        - Generates a PDF with the project's specific pricing and terms
+        - Uploads the PDF to Cloudinary
+        - Emails a copy to the client
+        - Stores the agreement URL in the draft
+
         **Prerequisite:** Estimate must be accepted before this step.
+
+        **No request body needed** - everything is auto-generated based on the draft data.
       security:
         - bearerAuth: []
       parameters:
@@ -764,65 +773,41 @@ paths:
           schema:
             type: string
           description: Draft ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - documentUrl
-              properties:
-                documentUrl:
-                  type: string
-                  format: uri
-                  maxLength: 2048
-                  description: URL to the service agreement document
-                agreementVersion:
-                  type: string
-                  maxLength: 100
-                  description: Version of the agreement (optional)
-                accepted:
-                  type: boolean
-                  default: true
-                  description: Acceptance status (defaults to true)
-                ipAddress:
-                  type: string
-                  maxLength: 45
-                  description: IP address (optional, auto-captured)
-                userAgent:
-                  type: string
-                  description: User agent (optional, auto-captured)
-                locale:
-                  type: string
-                  maxLength: 35
-                  description: Locale (optional)
-            example:
-              documentUrl: "https://primelogicsol.com/agreements/service-agreement-v1.pdf"
-              agreementVersion: "1.0"
-              accepted: true
       responses:
         "200":
-          description: Service agreement accepted successfully
+          description: Service agreement generated and accepted successfully
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Success"
               example:
                 success: true
-                message: Service agreement accepted successfully. You can now finalize your project.
+                message: Service agreement generated and accepted successfully. PDF sent to your email. You can now finalize your project.
                 data:
-                  id: "draft-uuid-123"
-                  serviceAgreement:
-                    documentUrl: "https://primelogicsol.com/agreements/service-agreement-v1.pdf"
-                    accepted: true
-                    acceptedAt: "2025-11-04T13:00:00.000Z"
+                  draft:
+                    id: "draft-uuid-123"
+                    serviceAgreement:
+                      documentUrl: "https://res.cloudinary.com/primelogicsol/service-agreement-xyz.pdf"
+                      agreementVersion: "1.0"
+                      accepted: true
+                      acceptedAt: "2025-11-04T13:00:00.000Z"
+                  documentUrl: "https://res.cloudinary.com/primelogicsol/service-agreement-xyz.pdf"
+                  agreementVersion: "1.0"
+                  pdfBase64: "JVBERi0xLjQKJeLjz9M..."
+                  fileName: "service-agreement-client-2025-11-04.pdf"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
           description: Draft not found
         "400":
           description: Estimate must be accepted first or draft already finalized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                message: "Estimate must be accepted before accepting service agreement"
         "500":
           $ref: "#/components/responses/InternalServerError"
 

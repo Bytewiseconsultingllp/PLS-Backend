@@ -10,7 +10,6 @@ import {
   clientProjectDraftFeaturesSchema,
   clientProjectDraftDiscountSchema,
   clientProjectDraftTimelineSchema,
-  clientProjectDraftServiceAgreementSchema,
 } from "../validation/zod";
 
 const router = Router();
@@ -145,13 +144,12 @@ router.post(
 
 /**
  * @route   POST /api/v1/projects/draft/:draftId/service-agreement
- * @desc    Step 8: Accept service agreement
+ * @desc    Step 8: Generate and accept service agreement (auto-generates PDF)
  * @access  Private (CLIENT)
  */
 router.post(
   "/:draftId/service-agreement",
   authMiddleware.checkToken,
-  validateDataMiddleware(clientProjectDraftServiceAgreementSchema),
   clientProjectDraftController.addDraftServiceAgreement,
 );
 
