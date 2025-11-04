@@ -66,6 +66,17 @@ router.get(
 );
 
 /**
+ * @route   GET /api/projects/:id/milestones
+ * @desc    Get all milestones for a project
+ * @access  Private (CLIENT/ADMIN)
+ */
+router.get(
+  "/:id/milestones",
+  authMiddleware.checkToken,
+  projectController.getProjectMilestones,
+);
+
+/**
  * @route   PATCH /api/projects/:id/discord-url
  * @desc    Update project discord chat URL
  * @access  Private (CLIENT/ADMIN)

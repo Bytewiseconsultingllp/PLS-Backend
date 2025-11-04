@@ -455,6 +455,13 @@ paths:
       description: |
         Get a list of all projects assigned to the logged-in moderator.
         Moderators can only see projects they are assigned to.
+
+        **Moderator Capabilities:**
+        - View all project details (excluding pricing/estimates)
+        - View all milestones in assigned projects
+        - Manage milestones using `/projects/{id}/milestones` endpoints
+        - Approve/disapprove milestones
+        - View assigned freelancers and client information
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -509,6 +516,13 @@ paths:
         Get detailed information about a specific project.
         Moderator must be assigned to this project to view it.
         Pricing/estimates are excluded from the response.
+
+        **Milestone Management:**
+        Moderators can manage milestones for their assigned projects using these endpoints:
+        - `POST /api/v1/projects/{id}/milestones` - Add new milestone
+        - `PATCH /api/v1/projects/{id}/milestones/{milestoneId}` - Update milestone
+        - `DELETE /api/v1/projects/{id}/milestones/{milestoneId}` - Delete milestone
+        - `POST /api/v1/projects/{id}/milestones/{milestoneId}/approve` - Approve/disapprove milestone
       security:
         - bearerAuth: []
         - cookieAuth: []

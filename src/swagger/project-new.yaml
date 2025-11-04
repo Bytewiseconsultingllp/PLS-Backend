@@ -576,6 +576,316 @@ paths:
   # ============================================
 
   /projects/{id}/milestones:
+    get:
+      tags:
+        - Client Projects
+      summary: Get all milestones for a project
+      description: |
+        Retrieve all milestones for a specific project without loading the full project data.
+
+        **Authorization:**
+        - Clients can only view milestones for their own projects
+        - Admins can view milestones for any project
+
+        **Returns:**
+        - List of all milestones (non-deleted) for the project
+        - Milestones are sorted by deadline (ascending)
+        - Includes assigned freelancer details if applicable
+        - Shows all milestone fields including status, progress, budget tracking, etc.
+
+        **Use Cases:**
+        - View project milestones without loading full project details
+        - Track milestone progress and deadlines
+        - Monitor assigned freelancers for each milestone
+        - Review moderator approval status
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Milestones retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Milestones retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          example: "cm1abc123"
+                        projectId:
+                          type: string
+                          format: uuid
+                          example: "550e8400-e29b-41d4-a716-446655440000"
+                        milestoneName:
+                          type: string
+                          example: "Initial Design Phase"
+                        description:
+                          type: string
+                          example: "Complete the initial design mockups and wireframes"
+                        deadline:
+                          type: string
+                          format: date-time
+                          example: "2025-12-31T23:59:59Z"
+                        progress:
+                          type: integer
+                          example: 75
+                        isMilestoneCompleted:
+                          type: boolean
+                          example: false
+                        status:
+                          type: string
+                          enum:
+                            [
+                              PLANNED,
+                              IN_PROGRESS,
+                              BLOCKED,
+                              COMPLETED,
+                              CANCELLED,
+                            ]
+                          example: "IN_PROGRESS"
+                        priority:
+                          type: string
+                          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+                          example: "HIGH"
+                        phase:
+                          type: string
+                          enum:
+                            [
+                              DISCOVERY,
+                              DESIGN,
+                              IMPLEMENTATION,
+                              TESTING,
+                              DEPLOYMENT,
+                            ]
+                          example: "DESIGN"
+                        riskLevel:
+                          type: string
+                          enum: [LOW, MEDIUM, HIGH]
+                          example: "MEDIUM"
+                        blocked:
+                          type: boolean
+                          example: false
+                        blockerReason:
+                          type: string
+                          nullable: true
+                          example: null
+                        estimatedHours:
+                          type: integer
+                          nullable: true
+                          example: 120
+                        actualHours:
+                          type: integer
+                          nullable: true
+                          example: 90
+                        budgetEstimate:
+                          type: number
+                          nullable: true
+                          example: 6000
+                        actualCost:
+                          type: number
+                          nullable: true
+                          example: 4500
+                        assignedFreelancerId:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          example: "freelancer-uuid-123"
+                        assignedFreelancer:
+                          type: object
+                          nullable: true
+                          properties:
+                            id:
+                              type: string
+                              example: "freelancer-uuid-123"
+                            details:
+                              type: object
+                              properties:
+                                fullName:
+                                  type: string
+                                  example: "Jane Developer"
+                                email:
+                                  type: string
+                                  example: "jane@example.com"
+                                primaryDomain:
+                                  type: string
+                                  example: "Frontend Development"
+                        deliverableUrl:
+                          type: string
+                          nullable: true
+                          example: "https://example.com/deliverables/design-mockup.pdf"
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                          example: ["design", "ui", "ux"]
+                        moderatorApprovalRequired:
+                          type: boolean
+                          example: true
+                        moderatorApproved:
+                          type: boolean
+                          example: false
+                        moderatorApprovedBy:
+                          type: string
+                          nullable: true
+                          example: null
+                        moderatorApprovedAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: null
+                        moderatorNotes:
+                          type: string
+                          nullable: true
+                          example: null
+                        startedAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: "2025-11-01T10:00:00Z"
+                        completedAt:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: null
+                        notes:
+                          type: string
+                          nullable: true
+                          example: "Working on responsive design"
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2025-10-15T08:30:00Z"
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          example: "2025-11-02T14:20:00Z"
+              example:
+                success: true
+                status: 200
+                message: "Milestones retrieved successfully"
+                data:
+                  - id: "cm1abc123"
+                    projectId: "550e8400-e29b-41d4-a716-446655440000"
+                    milestoneName: "Initial Design Phase"
+                    description: "Complete the initial design mockups and wireframes"
+                    deadline: "2025-12-31T23:59:59Z"
+                    progress: 75
+                    isMilestoneCompleted: false
+                    status: "IN_PROGRESS"
+                    priority: "HIGH"
+                    phase: "DESIGN"
+                    riskLevel: "MEDIUM"
+                    blocked: false
+                    blockerReason: null
+                    estimatedHours: 120
+                    actualHours: 90
+                    budgetEstimate: 6000
+                    actualCost: 4500
+                    assignedFreelancerId: "freelancer-uuid-123"
+                    assignedFreelancer:
+                      id: "freelancer-uuid-123"
+                      details:
+                        fullName: "Jane Developer"
+                        email: "jane@example.com"
+                        primaryDomain: "Frontend Development"
+                    deliverableUrl: "https://example.com/deliverables/design-mockup.pdf"
+                    tags: ["design", "ui", "ux"]
+                    moderatorApprovalRequired: true
+                    moderatorApproved: false
+                    moderatorApprovedBy: null
+                    moderatorApprovedAt: null
+                    moderatorNotes: null
+                    startedAt: "2025-11-01T10:00:00Z"
+                    completedAt: null
+                    notes: "Working on responsive design"
+                    createdAt: "2025-10-15T08:30:00Z"
+                    updatedAt: "2025-11-02T14:20:00Z"
+                  - id: "cm1xyz789"
+                    projectId: "550e8400-e29b-41d4-a716-446655440000"
+                    milestoneName: "Backend API Development"
+                    description: "Develop RESTful API endpoints"
+                    deadline: "2026-01-15T23:59:59Z"
+                    progress: 0
+                    isMilestoneCompleted: false
+                    status: "PLANNED"
+                    priority: "CRITICAL"
+                    phase: "IMPLEMENTATION"
+                    riskLevel: "HIGH"
+                    blocked: false
+                    blockerReason: null
+                    estimatedHours: 200
+                    actualHours: 0
+                    budgetEstimate: 10000
+                    actualCost: 0
+                    assignedFreelancerId: null
+                    assignedFreelancer: null
+                    deliverableUrl: null
+                    tags: ["backend", "api", "nodejs"]
+                    moderatorApprovalRequired: true
+                    moderatorApproved: false
+                    moderatorApprovedBy: null
+                    moderatorApprovedAt: null
+                    moderatorNotes: null
+                    startedAt: null
+                    completedAt: null
+                    notes: null
+                    createdAt: "2025-10-15T08:30:00Z"
+                    updatedAt: "2025-10-15T08:30:00Z"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          description: Forbidden - You don't have permission to view this project's milestones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Unauthorized: You don't have permission to view this project's milestones"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Project not found"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
     post:
       tags:
         - Client Projects
@@ -586,6 +896,7 @@ paths:
         **Authorization:**
         - Client (project owner) can add milestones to their own projects
         - Admin can add milestones to any project
+        - **Moderator** (assigned to the project) can add milestones to their assigned projects
 
         **Payment Requirement:**
         - ⚠️ **Payment must be SUCCEEDED** before creating milestones
@@ -686,6 +997,7 @@ paths:
         **Authorization:**
         - Client (project owner) can update milestones in their own projects
         - Admin can update any milestone
+        - **Moderator** (assigned to the project) can update milestones in their assigned projects
         - Freelancer can update milestones assigned to them (progress, notes, etc.)
 
         **Key Features:**
@@ -781,6 +1093,7 @@ paths:
         **Authorization:**
         - Client (project owner) can delete milestones from their own projects
         - Admin can delete any milestone
+        - **Moderator** (assigned to the project) can delete milestones from their assigned projects
 
         **Note:** This is a soft delete - the milestone is marked as deleted but not removed from the database.
       security:

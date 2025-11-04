@@ -982,6 +982,406 @@ export const getProjectForBidding = async (
 };
 
 // ============================================
+// FREELANCER SELECTED PROJECTS & MILESTONES
+// ============================================
+
+/**
+ * Get all projects where the freelancer is selected/assigned
+ * Only shows projects they're actively working on
+ */
+export const getMySelectedProjects = async (
+  freelancerUserId: string,
+  page = 1,
+  limit = 10,
+) => {
+  const skip = (page - 1) * limit;
+
+  // First, get the freelancer record to access their ID
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { userId: freelancerUserId },
+    select: { id: true },
+  });
+
+  if (!freelancer) {
+    throw new Error("Freelancer profile not found");
+  }
+
+  // Only get projects where this freelancer is in selectedFreelancers
+  const whereClause = {
+    deletedAt: null,
+    selectedFreelancers: {
+      some: {
+        id: freelancer.id,
+      },
+    },
+  };
+
+  const [projects, total] = await Promise.all([
+    prisma.project.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        paymentStatus: true,
+        acceptingBids: true,
+        discordChatUrl: true,
+        // Include project details but exclude client personal info
+        details: {
+          select: {
+            companyName: true,
+            companyWebsite: true,
+            businessAddress: true,
+            businessType: true,
+            referralSource: true,
+          },
+        },
+        services: true,
+        industries: true,
+        technologies: true,
+        features: true,
+        timeline: true,
+        selectedFreelancers: {
+          select: {
+            id: true,
+            details: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
+        // Include milestones summary for overview
+        milestones: {
+          where: {
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            milestoneName: true,
+            status: true,
+            progress: true,
+            deadline: true,
+            isMilestoneCompleted: true,
+            assignedFreelancerId: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.project.count({
+      where: whereClause,
+    }),
+  ]);
+
+  return {
+    projects,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+/**
+ * Get detailed view of a specific project the freelancer is selected for
+ */
+export const getMySelectedProjectDetails = async (
+  projectId: string,
+  freelancerUserId: string,
+) => {
+  // First, get the freelancer record to access their ID
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { userId: freelancerUserId },
+    select: { id: true },
+  });
+
+  if (!freelancer) {
+    throw new Error("Freelancer profile not found");
+  }
+
+  // Get project only if freelancer is selected for it
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      deletedAt: null,
+      selectedFreelancers: {
+        some: {
+          id: freelancer.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      updatedAt: true,
+      paymentStatus: true,
+      acceptingBids: true,
+      discordChatUrl: true,
+      details: {
+        select: {
+          companyName: true,
+          companyWebsite: true,
+          businessAddress: true,
+          businessType: true,
+          referralSource: true,
+        },
+      },
+      services: true,
+      industries: true,
+      technologies: true,
+      features: true,
+      timeline: true,
+      selectedFreelancers: {
+        select: {
+          id: true,
+          details: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      },
+      milestones: {
+        where: {
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          milestoneName: true,
+          description: true,
+          status: true,
+          progress: true,
+          deadline: true,
+          isMilestoneCompleted: true,
+          priority: true,
+          phase: true,
+          assignedFreelancerId: true,
+          estimatedHours: true,
+          actualHours: true,
+          tags: true,
+          deliverableUrl: true,
+          completedAt: true,
+        },
+        orderBy: {
+          deadline: "asc",
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    throw new Error(
+      "Project not found or you are not assigned to this project",
+    );
+  }
+
+  return project;
+};
+
+/**
+ * Get all milestones for a project the freelancer is selected for
+ */
+export const getProjectMilestones = async (
+  projectId: string,
+  freelancerUserId: string,
+) => {
+  // First, verify freelancer is selected for this project
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { userId: freelancerUserId },
+    select: { id: true },
+  });
+
+  if (!freelancer) {
+    throw new Error("Freelancer profile not found");
+  }
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      deletedAt: null,
+      selectedFreelancers: {
+        some: {
+          id: freelancer.id,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!project) {
+    throw new Error(
+      "Project not found or you are not assigned to this project",
+    );
+  }
+
+  // Get all milestones for this project
+  const milestones = await prisma.milestone.findMany({
+    where: {
+      projectId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      milestoneName: true,
+      description: true,
+      status: true,
+      progress: true,
+      deadline: true,
+      startedAt: true,
+      completedAt: true,
+      isMilestoneCompleted: true,
+      priority: true,
+      phase: true,
+      riskLevel: true,
+      blocked: true,
+      blockerReason: true,
+      assignedFreelancerId: true,
+      assignedFreelancer: {
+        select: {
+          id: true,
+          details: {
+            select: {
+              fullName: true,
+            },
+          },
+        },
+      },
+      estimatedHours: true,
+      actualHours: true,
+      budgetEstimate: true,
+      actualCost: true,
+      tags: true,
+      deliverableUrl: true,
+      notes: true,
+      moderatorApprovalRequired: true,
+      moderatorApproved: true,
+      moderatorApprovedAt: true,
+      moderatorNotes: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      deadline: "asc",
+    },
+  });
+
+  return milestones;
+};
+
+/**
+ * Get specific milestone details for a project the freelancer is selected for
+ */
+export const getMilestoneDetails = async (
+  projectId: string,
+  milestoneId: string,
+  freelancerUserId: string,
+) => {
+  // First, verify freelancer is selected for this project
+  const freelancer = await prisma.freelancer.findUnique({
+    where: { userId: freelancerUserId },
+    select: { id: true },
+  });
+
+  if (!freelancer) {
+    throw new Error("Freelancer profile not found");
+  }
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      deletedAt: null,
+      selectedFreelancers: {
+        some: {
+          id: freelancer.id,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  if (!project) {
+    throw new Error(
+      "Project not found or you are not assigned to this project",
+    );
+  }
+
+  // Get milestone details
+  const milestone = await prisma.milestone.findFirst({
+    where: {
+      id: milestoneId,
+      projectId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      milestoneName: true,
+      description: true,
+      status: true,
+      progress: true,
+      deadline: true,
+      startedAt: true,
+      completedAt: true,
+      isMilestoneCompleted: true,
+      priority: true,
+      phase: true,
+      riskLevel: true,
+      blocked: true,
+      blockerReason: true,
+      assignedFreelancerId: true,
+      assignedFreelancer: {
+        select: {
+          id: true,
+          details: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      },
+      estimatedHours: true,
+      actualHours: true,
+      budgetEstimate: true,
+      actualCost: true,
+      tags: true,
+      deliverableUrl: true,
+      notes: true,
+      moderatorApprovalRequired: true,
+      moderatorApproved: true,
+      moderatorApprovedBy: true,
+      moderatorApprovedAt: true,
+      moderatorNotes: true,
+      project: {
+        select: {
+          id: true,
+          details: {
+            select: {
+              companyName: true,
+            },
+          },
+        },
+      },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!milestone) {
+    throw new Error("Milestone not found");
+  }
+
+  return milestone;
+};
+
+// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 
@@ -1037,4 +1437,8 @@ export default {
   getAvailableProjects,
   getProjectForBidding,
   getFreelancerByUserId,
+  getMySelectedProjects,
+  getMySelectedProjectDetails,
+  getProjectMilestones,
+  getMilestoneDetails,
 };

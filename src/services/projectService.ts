@@ -755,6 +755,51 @@ export class ProjectService {
       },
     });
   }
+
+  /**
+   * Get milestones for a project (Client view)
+   * Returns only milestones for client's own project
+   */
+  async getProjectMilestones(projectId: string, clientId: string) {
+    // First verify the project exists and belongs to the client
+    const project = await db.project.findUnique({
+      where: { id: projectId, deletedAt: null },
+      select: { id: true, clientId: true },
+    });
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    if (project.clientId !== clientId) {
+      throw new Error(
+        "Unauthorized: You don't have permission to view this project's milestones",
+      );
+    }
+
+    // Fetch milestones with assigned freelancer details
+    return await db.milestone.findMany({
+      where: {
+        projectId,
+        deletedAt: null,
+      },
+      include: {
+        assignedFreelancer: {
+          select: {
+            id: true,
+            details: {
+              select: {
+                fullName: true,
+                email: true,
+                primaryDomain: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { deadline: "asc" },
+    });
+  }
 }
 
 export const projectService = new ProjectService();

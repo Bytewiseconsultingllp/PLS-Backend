@@ -113,4 +113,56 @@ router.delete(
   freelancerController.withdrawBid,
 );
 
+// ============================================
+// SELECTED PROJECTS & MILESTONES ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/freelancer/my-projects
+ * @desc    Get all projects where the freelancer is selected/assigned
+ * @access  Private (Freelancer)
+ */
+router.get(
+  "/my-projects",
+  authMiddleware.checkToken,
+  authMiddleware.checkIfUserIsAdminModeratorOrFreeLancer,
+  freelancerController.getMySelectedProjects,
+);
+
+/**
+ * @route   GET /api/freelancer/my-projects/:projectId
+ * @desc    Get detailed view of a specific project the freelancer is selected for
+ * @access  Private (Freelancer)
+ */
+router.get(
+  "/my-projects/:projectId",
+  authMiddleware.checkToken,
+  authMiddleware.checkIfUserIsAdminModeratorOrFreeLancer,
+  freelancerController.getMySelectedProjectDetails,
+);
+
+/**
+ * @route   GET /api/freelancer/my-projects/:projectId/milestones
+ * @desc    Get all milestones for a project the freelancer is selected for
+ * @access  Private (Freelancer)
+ */
+router.get(
+  "/my-projects/:projectId/milestones",
+  authMiddleware.checkToken,
+  authMiddleware.checkIfUserIsAdminModeratorOrFreeLancer,
+  freelancerController.getProjectMilestones,
+);
+
+/**
+ * @route   GET /api/freelancer/my-projects/:projectId/milestones/:milestoneId
+ * @desc    Get specific milestone details for a project the freelancer is selected for
+ * @access  Private (Freelancer)
+ */
+router.get(
+  "/my-projects/:projectId/milestones/:milestoneId",
+  authMiddleware.checkToken,
+  authMiddleware.checkIfUserIsAdminModeratorOrFreeLancer,
+  freelancerController.getMilestoneDetails,
+);
+
 export default router;

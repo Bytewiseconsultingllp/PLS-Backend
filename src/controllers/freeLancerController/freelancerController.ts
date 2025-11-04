@@ -521,6 +521,215 @@ export const withdrawBid = async (
   }
 };
 
+// ============================================
+// SELECTED PROJECTS & MILESTONES
+// ============================================
+
+/**
+ * GET /api/freelancer/my-projects
+ * Get all projects where the freelancer is selected/assigned
+ * Requires authentication - freelancer role
+ */
+export const getMySelectedProjects = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = (req as any).userFromToken?.uid;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized - No user ID found",
+      });
+      return;
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const result = await freelancerService.getMySelectedProjects(
+      userId,
+      page,
+      limit,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("Error in getMySelectedProjects:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch selected projects",
+    });
+  }
+};
+
+/**
+ * GET /api/freelancer/my-projects/:projectId
+ * Get detailed view of a specific project the freelancer is selected for
+ * Requires authentication - freelancer role
+ */
+export const getMySelectedProjectDetails = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const userId = (req as any).userFromToken?.uid;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized - No user ID found",
+      });
+      return;
+    }
+
+    if (!projectId) {
+      res.status(400).json({
+        success: false,
+        message: "Project ID is required",
+      });
+      return;
+    }
+
+    const project = await freelancerService.getMySelectedProjectDetails(
+      projectId,
+      userId,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: project,
+    });
+  } catch (error: any) {
+    console.error("Error in getMySelectedProjectDetails:", error);
+    res
+      .status(
+        error.message.includes("not found") ||
+          error.message.includes("not assigned")
+          ? 404
+          : 500,
+      )
+      .json({
+        success: false,
+        message: error.message || "Failed to fetch project details",
+      });
+  }
+};
+
+/**
+ * GET /api/freelancer/my-projects/:projectId/milestones
+ * Get all milestones for a project the freelancer is selected for
+ * Requires authentication - freelancer role
+ */
+export const getProjectMilestones = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const userId = (req as any).userFromToken?.uid;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized - No user ID found",
+      });
+      return;
+    }
+
+    if (!projectId) {
+      res.status(400).json({
+        success: false,
+        message: "Project ID is required",
+      });
+      return;
+    }
+
+    const milestones = await freelancerService.getProjectMilestones(
+      projectId,
+      userId,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: milestones,
+    });
+  } catch (error: any) {
+    console.error("Error in getProjectMilestones:", error);
+    res
+      .status(
+        error.message.includes("not found") ||
+          error.message.includes("not assigned")
+          ? 404
+          : 500,
+      )
+      .json({
+        success: false,
+        message: error.message || "Failed to fetch project milestones",
+      });
+  }
+};
+
+/**
+ * GET /api/freelancer/my-projects/:projectId/milestones/:milestoneId
+ * Get specific milestone details for a project the freelancer is selected for
+ * Requires authentication - freelancer role
+ */
+export const getMilestoneDetails = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { projectId, milestoneId } = req.params;
+    const userId = (req as any).userFromToken?.uid;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized - No user ID found",
+      });
+      return;
+    }
+
+    if (!projectId || !milestoneId) {
+      res.status(400).json({
+        success: false,
+        message: "Project ID and Milestone ID are required",
+      });
+      return;
+    }
+
+    const milestone = await freelancerService.getMilestoneDetails(
+      projectId,
+      milestoneId,
+      userId,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: milestone,
+    });
+  } catch (error: any) {
+    console.error("Error in getMilestoneDetails:", error);
+    res
+      .status(
+        error.message.includes("not found") ||
+          error.message.includes("not assigned")
+          ? 404
+          : 500,
+      )
+      .json({
+        success: false,
+        message: error.message || "Failed to fetch milestone details",
+      });
+  }
+};
+
 export default {
   acceptPlatformAgreement,
   registerFreelancer,
@@ -531,4 +740,8 @@ export default {
   getMyBids,
   getBidDetails,
   withdrawBid,
+  getMySelectedProjects,
+  getMySelectedProjectDetails,
+  getProjectMilestones,
+  getMilestoneDetails,
 };

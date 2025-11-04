@@ -657,4 +657,50 @@ export default {
 
     httpResponse(req, res, SUCCESSCODE, "Project deleted successfully", null);
   }),
+
+  /**
+   * Get milestones for a project
+   * Client can only view milestones for their own project
+   * Admin can view any project's milestones
+   */
+  getProjectMilestones: asyncHandler(async (req: _Request, res) => {
+    const { id } = req.params;
+    const userId = req.userFromToken?.uid;
+    const userRole = req.userFromToken?.role;
+
+    if (!id) {
+      throw { status: BADREQUESTCODE, message: "Project ID is required" };
+    }
+
+    if (!userId) {
+      throw { status: UNAUTHORIZEDCODE, message: "Authentication required" };
+    }
+
+    let milestones;
+
+    // Admin can view any project's milestones
+    if (userRole === "ADMIN") {
+      // Verify project exists
+      const project = await projectService.getProjectById(id);
+      if (!project) {
+        throw { status: NOTFOUNDCODE, message: "Project not found" };
+      }
+
+      milestones = await projectService.getProjectMilestones(
+        id,
+        project.clientId,
+      );
+    } else {
+      // Client can only view their own project's milestones
+      milestones = await projectService.getProjectMilestones(id, userId);
+    }
+
+    httpResponse(
+      req,
+      res,
+      SUCCESSCODE,
+      "Milestones retrieved successfully",
+      milestones,
+    );
+  }),
 };
