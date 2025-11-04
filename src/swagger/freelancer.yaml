@@ -2130,5 +2130,3 @@ paths:
                     example: false
                   message:
                     type: string
-
-

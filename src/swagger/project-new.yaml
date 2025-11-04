@@ -71,6 +71,13 @@ paths:
                     estimateAccepted: true
                     estimateFinalPriceMin: 5000
                     estimateFinalPriceMax: 7000
+                  serviceAgreement:
+                    documentUrl: "https://example.com/agreements/service-agreement.pdf"
+                    agreementVersion: "v1.0"
+                    accepted: true
+                    ipAddress: "192.168.1.1"
+                    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    locale: "en-US"
       responses:
         "200":
           description: Project created successfully

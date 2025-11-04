@@ -1758,5 +1758,3 @@ export const acceptFreelancerPlatformAgreementSchema = z.object({
       message: "You must accept the platform agreement to proceed",
     }),
 });
-
-

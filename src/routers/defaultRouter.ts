@@ -20,6 +20,7 @@ import moderatorRouter from "./moderatorRouter/moderatorRouter";
 import paymentAgreementRouter from "./paymentAgreementRouter/paymentAgreementRouter";
 import kpiRouter from "./kpiRouter/kpiRouter";
 import pricingRouter from "./pricingRouter/pricingRouter";
+import adminRouter from "./adminRouter/adminRouter";
 
 // OLD - Uses deprecated CreateServicesForQuote model
 // import { getQuoteRouter } from "./getQuoteRouter/getQuoteRouter";
@@ -90,6 +91,9 @@ defaultRouter.use("/", kpiRouter); // For public/general KPI endpoints
 
 // **   PRICING ROUTER (Admin only)
 defaultRouter.use(`${endpoint.ADMINROUTE}/pricing`, pricingRouter);
+
+// **   ADMIN ROUTER (Admin only - comprehensive admin endpoints)
+defaultRouter.use(endpoint.ADMINROUTE, adminRouter);
 
 // ============================================
 // OLD DEPRECATED ROUTES (Commented out)

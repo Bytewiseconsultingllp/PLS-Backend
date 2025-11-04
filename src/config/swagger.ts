@@ -703,6 +703,20 @@ const swaggerDefinition = {
       description:
         "Admin endpoints for managing pricing data (service categories, technologies, features)",
     },
+    {
+      name: "Admin - Projects",
+      description:
+        "Admin endpoints for managing all projects with comprehensive data (Admin only)",
+    },
+    {
+      name: "Admin - Clients",
+      description:
+        "Admin endpoints for managing all clients with full details (Admin only)",
+    },
+    {
+      name: "Admin - Freelancers",
+      description: "Admin endpoints for managing all freelancers (Admin only)",
+    },
   ],
 };
 
