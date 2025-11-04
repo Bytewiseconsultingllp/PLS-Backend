@@ -1758,3 +1758,142 @@ export const acceptFreelancerPlatformAgreementSchema = z.object({
       message: "You must accept the platform agreement to proceed",
     }),
 });
+
+// ============================================
+// CLIENT PROJECT DRAFT SCHEMAS
+// ============================================
+// Validation schemas for step-by-step project creation by existing clients
+
+// Step 1: Create draft with business details
+// Auto-populated: fullName, businessEmail, phoneNumber from User
+// Client provides: companyName, companyWebsite, businessAddress, businessType
+export const clientProjectDraftCreateSchema = z.object({
+  companyName: z
+    .string({ message: "companyName is required!!" })
+    .min(1, { message: "companyName is required!!" })
+    .min(2, { message: "companyName must be at least 2 characters long." })
+    .max(200, { message: "companyName can be at most 200 characters long." }),
+  companyWebsite: z
+    .string({ message: "companyWebsite must be a string" })
+    .url({ message: "companyWebsite must be a valid URL" })
+    .max(2048, {
+      message: "companyWebsite can be at most 2048 characters long.",
+    })
+    .optional(),
+  businessAddress: z
+    .string({ message: "businessAddress must be a string" })
+    .max(1000, {
+      message: "businessAddress can be at most 1000 characters long.",
+    })
+    .optional(),
+  businessType: z
+    .string({ message: "businessType is required!!" })
+    .min(1, { message: "businessType is required!!" })
+    .max(200, { message: "businessType can be at most 200 characters long." }),
+});
+
+// Step 2: Add services to draft
+export const clientProjectDraftServicesSchema = z.object({
+  services: z
+    .array(clientProjectServiceSchema, {
+      message: "services must be an array of service objects",
+    })
+    .min(1, { message: "At least one service must be selected" }),
+});
+
+// Step 3: Add industries to draft
+export const clientProjectDraftIndustriesSchema = z.object({
+  industries: z
+    .array(clientProjectIndustrySchema, {
+      message: "industries must be an array of industry objects",
+    })
+    .min(1, { message: "At least one industry must be selected" }),
+});
+
+// Step 4: Add technologies to draft
+export const clientProjectDraftTechnologiesSchema = z.object({
+  technologies: z
+    .array(clientProjectTechnologySchema, {
+      message: "technologies must be an array of technology objects",
+    })
+    .min(1, { message: "At least one technology category must be selected" }),
+});
+
+// Step 5: Add features to draft
+export const clientProjectDraftFeaturesSchema = z.object({
+  features: z
+    .array(clientProjectFeatureSchema, {
+      message: "features must be an array of feature objects",
+    })
+    .min(1, { message: "At least one feature category must be selected" }),
+});
+
+// Step 6: Add discount to draft
+export const clientProjectDraftDiscountSchema = z.object({
+  type: z.enum(
+    [
+      "STARTUP_FOUNDER",
+      "VETERAN_OWNED_BUSINESS",
+      "NONPROFIT_ORGANIZATION",
+      "NOT_ELIGIBLE",
+    ],
+    { message: "Invalid discount type" },
+  ),
+  percent: z
+    .number({ message: "percent must be a number" })
+    .min(0, { message: "percent cannot be negative" })
+    .max(100, { message: "percent cannot exceed 100" }),
+  notes: z
+    .string({ message: "notes must be a string" })
+    .max(500, { message: "notes can be at most 500 characters long." })
+    .optional(),
+});
+
+// Step 7: Add timeline to draft (this triggers auto-calculation of estimate)
+export const clientProjectDraftTimelineSchema = z.object({
+  option: z.enum(
+    [
+      "STANDARD_BUILD",
+      "PRIORITY_BUILD",
+      "ACCELERATED_BUILD",
+      "RAPID_BUILD",
+      "FAST_TRACK_BUILD",
+    ],
+    { message: "Invalid timeline option" },
+  ),
+  rushFeePercent: z
+    .number({ message: "rushFeePercent must be a number" })
+    .min(0, { message: "rushFeePercent cannot be negative" })
+    .max(100, { message: "rushFeePercent cannot exceed 100" }),
+  estimatedDays: z
+    .number({ message: "estimatedDays must be a number" })
+    .min(1, { message: "estimatedDays must be at least 1" }),
+  description: z
+    .string({ message: "description must be a string" })
+    .max(500, { message: "description can be at most 500 characters long." })
+    .optional(),
+});
+
+// Step 8: Accept service agreement
+export const clientProjectDraftServiceAgreementSchema = z.object({
+  documentUrl: z
+    .string({ message: "documentUrl is required!!" })
+    .url({ message: "documentUrl must be a valid URL" })
+    .max(2048, { message: "documentUrl can be at most 2048 characters long." }),
+  agreementVersion: z
+    .string({ message: "agreementVersion must be a string" })
+    .max(100, {
+      message: "agreementVersion can be at most 100 characters long.",
+    })
+    .optional(),
+  accepted: z.boolean({ message: "accepted must be a boolean" }).default(true),
+  ipAddress: z
+    .string({ message: "ipAddress must be a string" })
+    .max(45, { message: "ipAddress can be at most 45 characters long." })
+    .optional(),
+  userAgent: z.string({ message: "userAgent must be a string" }).optional(),
+  locale: z
+    .string({ message: "locale must be a string" })
+    .max(35, { message: "locale can be at most 35 characters long." })
+    .optional(),
+});

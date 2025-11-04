@@ -459,6 +459,20 @@ const swaggerDefinition = {
           },
         },
       },
+      Unauthorized: {
+        description: "Authentication token is missing or invalid",
+        content: {
+          "application/json": {
+            schema: {
+              $ref: "#/components/schemas/Error",
+            },
+            example: {
+              success: false,
+              message: "Unauthorized - Invalid or missing token",
+            },
+          },
+        },
+      },
       ForbiddenError: {
         description: "User does not have permission to access this resource",
         content: {
@@ -623,6 +637,11 @@ const swaggerDefinition = {
       name: "Client Projects",
       description:
         "Client project management endpoints (NEW system for existing clients)",
+    },
+    {
+      name: "Client Project Draft",
+      description:
+        "Step-by-step project creation for existing authenticated clients (similar to visitor flow)",
     },
     {
       name: "Trash",

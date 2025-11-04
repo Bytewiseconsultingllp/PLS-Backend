@@ -14,6 +14,7 @@ import { contactUsRouter } from "./contactUsRouter/contactUsRouter";
 // NEW ROUTERS (Rebuilt schema)
 import newVisitorsRouter from "./visitorsRouter/newVisitorsRouter";
 import newProjectRouter from "./projectRouter/newProjectRouter";
+import clientProjectDraftRouter from "./clientProjectDraftRouter";
 import newFreelancerRouter from "./freelancerRouter/newFreelancerRouter";
 import adminModeratorRouter from "./moderatorRouter/adminModeratorRouter";
 import moderatorRouter from "./moderatorRouter/moderatorRouter";
@@ -74,6 +75,9 @@ defaultRouter.use(endpoint.VISITORSROUTE, newVisitorsRouter);
 
 // **   PROJECTS ROUTER (NEW) - includes milestones
 defaultRouter.use(endpoint.PROJECT, newProjectRouter);
+
+// **   CLIENT PROJECT DRAFT ROUTER (NEW) - step-by-step project creation for existing clients
+defaultRouter.use(`${endpoint.PROJECT}/draft`, clientProjectDraftRouter);
 
 // **   FREELANCERS ROUTER (NEW)
 defaultRouter.use(endpoint.FREELANCER, newFreelancerRouter);

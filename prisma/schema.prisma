@@ -63,11 +63,12 @@ model User {
   updatedAt               DateTime  @updatedAt
 
   // Relations
-  visitors           Visitor[]   // Visitors that converted to this client
-  projects           Project[]   // Projects owned by this client
-  payments           Payment[]   // Payments made by this client
-  freelancer         Freelancer? // Freelancer profile (if user is a freelancer)
-  moderatedProjects  Project[]   @relation("ProjectModerator") // Projects moderated by this user
+  visitors          Visitor[] // Visitors that converted to this client
+  projects          Project[] // Projects owned by this client
+  payments          Payment[] // Payments made by this client
+  freelancer        Freelancer? // Freelancer profile (if user is a freelancer)
+  moderatedProjects Project[]            @relation("ProjectModerator") // Projects moderated by this user
+  projectDrafts     ClientProjectDraft[] @relation("ClientProjectDrafts") // Project drafts created by this client
 
   @@index([trashedAt])
   @@index([trashedBy])
@@ -703,17 +704,17 @@ model Project {
   assignedModerator   User?   @relation("ProjectModerator", fields: [assignedModeratorId], references: [uid], onDelete: SetNull)
 
   // Project-level sub tables
-  details          ProjectDetails?
-  services         ProjectService[]
-  industries       ProjectIndustries[]
-  technologies     ProjectTechnologies[]
-  features         ProjectFeatures[]
-  discount         ProjectDiscount?
-  timeline         ProjectTimeline?
-  estimate         ProjectEstimate?
-  serviceAgreement ProjectServiceAgreement?
-  milestones       Milestone[]
-  payments         Payment[]
+  details           ProjectDetails?
+  services          ProjectService[]
+  industries        ProjectIndustries[]
+  technologies      ProjectTechnologies[]
+  features          ProjectFeatures[]
+  discount          ProjectDiscount?
+  timeline          ProjectTimeline?
+  estimate          ProjectEstimate?
+  serviceAgreement  ProjectServiceAgreement?
+  milestones        Milestone[]
+  payments          Payment[]
   paymentAgreements MilestonePaymentAgreement[] // Payment agreements for milestones
 
   // Freelancer relations
@@ -1020,10 +1021,10 @@ model Milestone {
 // ============================================
 
 enum AgreementStatus {
-  DRAFT      // Agreement created but not yet active
-  ACTIVE     // Agreement signed and active
-  COMPLETED  // Milestone completed, payment distributed
-  CANCELLED  // Agreement cancelled/voided
+  DRAFT // Agreement created but not yet active
+  ACTIVE // Agreement signed and active
+  COMPLETED // Milestone completed, payment distributed
+  CANCELLED // Agreement cancelled/voided
 }
 
 model MilestonePaymentAgreement {
@@ -1037,7 +1038,7 @@ model MilestonePaymentAgreement {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   // DocuSign Agreement Details
-  agreementDocumentUrl String @db.VarChar(2048) // DocuSign link to signed document
+  agreementDocumentUrl String  @db.VarChar(2048) // DocuSign link to signed document
   milestoneAmount      Decimal @db.Decimal(18, 2) // Total amount for this milestone
 
   // Distribution details stored as JSON
@@ -1050,8 +1051,8 @@ model MilestonePaymentAgreement {
 
   // Audit trail
   createdBy String // Admin/Moderator UID who created this
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
   @@index([milestoneId])
@@ -1604,4 +1605,226 @@ model PricingFeature {
 
   @@index([feature])
   @@index([isActive])
+}
+
+// ============================================
+// CLIENT PROJECT DRAFT MODELS
+// ============================================
+// These models handle step-by-step project creation
+// for existing authenticated clients (similar to Visitor flow)
+
+model ClientProjectDraft {
+  id String @id @default(uuid())
+
+  // Link to the authenticated client creating this draft
+  clientId String
+  client   User   @relation("ClientProjectDrafts", fields: [clientId], references: [uid], onDelete: Cascade)
+
+  // Conversion tracking
+  isFinalized Boolean   @default(false)
+  finalizedAt DateTime?
+  projectId   String? // Link to final project after finalization
+
+  // Relations to draft sub-tables (same structure as Visitor)
+  details          ClientProjectDraftDetails?
+  services         ClientProjectDraftService[]
+  industries       ClientProjectDraftIndustries[]
+  technologies     ClientProjectDraftTechnologies[]
+  features         ClientProjectDraftFeatures[]
+  discount         ClientProjectDraftDiscount?
+  timeline         ClientProjectDraftTimeline?
+  estimate         ClientProjectDraftEstimate?
+  serviceAgreement ClientProjectDraftServiceAgreement?
+
+  // Draft metadata
+  ipAddress String? @db.VarChar(45)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([clientId])
+  @@index([isFinalized])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model ClientProjectDraftDetails {
+  id      String             @id @default(uuid())
+  draftId String             @unique
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  // Auto-populated from User model
+  fullName      String  @db.VarChar(200)
+  businessEmail String  @db.VarChar(254)
+  phoneNumber   String? @db.VarChar(32)
+
+  // Client provides these business-specific fields
+  companyName     String  @db.VarChar(200)
+  companyWebsite  String? @db.VarChar(2048)
+  businessAddress String? @db.Text
+  businessType    String  @db.VarChar(200)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([businessEmail])
+  @@index([phoneNumber])
+  @@index([companyName])
+}
+
+model ClientProjectDraftService {
+  id      String             @id @default(uuid())
+  draftId String
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  name          ServiceCategory
+  childServices String[]
+
+  selectedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([draftId])
+  @@index([deletedAt])
+}
+
+model ClientProjectDraftIndustries {
+  id      String             @id @default(uuid())
+  draftId String
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  category      IndustryCategory
+  subIndustries IndustrySubIndustry[]
+
+  selectedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([draftId])
+  @@index([deletedAt])
+  @@index([category])
+}
+
+model ClientProjectDraftTechnologies {
+  id      String             @id @default(uuid())
+  draftId String
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  category     TechnologyCategory
+  technologies TechnologyItem[]
+
+  selectedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([draftId, category])
+  @@index([draftId])
+  @@index([deletedAt])
+  @@index([category])
+}
+
+model ClientProjectDraftFeatures {
+  id      String             @id @default(uuid())
+  draftId String
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  category FeatureCategory
+  features FeatureItem[]
+
+  selectedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@unique([draftId, category])
+  @@index([draftId])
+  @@index([deletedAt])
+  @@index([category])
+}
+
+model ClientProjectDraftDiscount {
+  id      String             @id @default(uuid())
+  draftId String             @unique
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  type    DiscountType
+  percent Int          @db.SmallInt
+  notes   String?      @db.Text
+
+  selectedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([deletedAt])
+}
+
+model ClientProjectDraftTimeline {
+  id      String             @id @default(uuid())
+  draftId String             @unique
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  option         TimelineOption
+  rushFeePercent Int            @db.SmallInt
+  estimatedDays  Int            @db.SmallInt
+
+  description String?   @db.Text
+  selectedAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([deletedAt])
+}
+
+model ClientProjectDraftEstimate {
+  id      String             @id @default(uuid())
+  draftId String             @unique
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  estimateAccepted      Boolean
+  estimateFinalPriceMin Decimal @db.Decimal(18, 2)
+  estimateFinalPriceMax Decimal @db.Decimal(18, 2)
+
+  // Calculation tracking
+  isManuallyAdjusted Boolean  @default(false)
+  baseCost           Decimal? @db.Decimal(18, 2)
+  discountAmount     Decimal? @db.Decimal(18, 2)
+  rushFeeAmount      Decimal? @db.Decimal(18, 2)
+  calculatedTotal    Decimal? @db.Decimal(18, 2)
+
+  calculatedAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([deletedAt])
+}
+
+model ClientProjectDraftServiceAgreement {
+  id      String             @id @default(uuid())
+  draftId String             @unique
+  draft   ClientProjectDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  documentUrl      String  @db.VarChar(2048)
+  agreementVersion String? @db.VarChar(100)
+
+  accepted   Boolean  @default(true)
+  acceptedAt DateTime @default(now())
+
+  ipAddress String? @db.VarChar(45)
+  userAgent String? @db.Text
+  locale    String? @db.VarChar(35)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([acceptedAt])
+  @@index([deletedAt])
 }
