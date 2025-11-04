@@ -300,41 +300,6 @@ const swaggerDefinition = {
           },
         },
       },
-      Milestone: {
-        type: "object",
-        properties: {
-          id: {
-            type: "string",
-            format: "uuid",
-          },
-          title: {
-            type: "string",
-            example: "Initial Design Phase",
-          },
-          description: {
-            type: "string",
-            example: "Complete the initial design mockups",
-          },
-          dueDate: {
-            type: "string",
-            format: "date",
-          },
-          progress: {
-            type: "number",
-            example: 50,
-            minimum: 0,
-            maximum: 100,
-          },
-          isCompleted: {
-            type: "boolean",
-            example: false,
-          },
-          projectId: {
-            type: "string",
-            format: "uuid",
-          },
-        },
-      },
       ContactMessage: {
         type: "object",
         required: ["name", "email", "message"],
