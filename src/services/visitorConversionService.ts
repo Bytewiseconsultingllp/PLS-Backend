@@ -7,12 +7,21 @@ class VisitorConversionService {
    * Convert a visitor to a project
    * Copies all visitor data to a new project and marks visitor as converted
    * Returns project data with payment checkout URL
+   *
+   * NOTE: Project creation is resilient - it will proceed even if:
+   * - Service agreement is missing or not accepted
+   * - Estimate is missing or not accepted
+   * - Email sending fails
+   * This ensures projects are created "at any cost"
    */
   async convertVisitorToProject(
     visitorId: string,
     clientId: string,
     paymentRedirectUrls?: { successUrl: string; cancelUrl: string },
   ): Promise<any> {
+    // Track warnings about missing/incomplete data
+    const warnings: string[] = [];
+
     // Fetch complete visitor data
     const visitor = await db.visitor.findUnique({
       where: { id: visitorId },
@@ -33,14 +42,28 @@ class VisitorConversionService {
       throw new Error("Visitor not found");
     }
 
-    // Check if estimate is accepted
-    if (!visitor.estimate?.estimateAccepted) {
-      throw new Error("Estimate must be accepted before creating project");
-    }
-
-    // Check if already converted
+    // Check if already converted (only hard requirement)
     if (visitor.isConverted) {
       throw new Error("Visitor has already been converted to a project");
+    }
+
+    // Log warnings for missing data but don't fail
+    if (!visitor.estimate) {
+      warnings.push("No estimate data found");
+      logger.warn(`Converting visitor ${visitorId} without estimate data`);
+    } else if (!visitor.estimate.estimateAccepted) {
+      warnings.push("Estimate not accepted");
+      logger.warn(`Converting visitor ${visitorId} with unaccepted estimate`);
+    }
+
+    if (!visitor.serviceAgreement) {
+      warnings.push("No service agreement found");
+      logger.warn(`Converting visitor ${visitorId} without service agreement`);
+    } else if (!visitor.serviceAgreement.accepted) {
+      warnings.push("Service agreement not accepted");
+      logger.warn(
+        `Converting visitor ${visitorId} with unaccepted service agreement`,
+      );
     }
 
     // Create project with all visitor data
@@ -211,6 +234,7 @@ class VisitorConversionService {
     return {
       project,
       checkoutSession,
+      warnings: warnings.length > 0 ? warnings : undefined,
     };
   }
 

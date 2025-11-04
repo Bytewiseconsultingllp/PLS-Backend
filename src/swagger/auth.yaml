@@ -77,7 +77,18 @@ paths:
       tags:
         - Authentication
       summary: Verify user email with OTP
-      description: Verify user email address using OTP sent during registration
+      description: |
+        Verify user email address using OTP sent during registration.
+
+        **Automatic Project Conversion (Resilient):**
+        If a visitor with matching email exists, their data will be automatically converted 
+        to a project during verification. Project creation is resilient and will succeed even if:
+        - Service agreement is missing or not accepted
+        - Estimate is missing or not accepted
+        - Some visitor data is incomplete
+
+        The response includes conversion status, any warnings about missing data, and errors 
+        for debugging and UX purposes. This ensures projects are created "at any cost".
       requestBody:
         required: true
         content:
@@ -105,7 +116,136 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Success"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User verified successfully"
+                  data:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                        format: uuid
+                        example: "123e4567-e89b-12d3-a456-426614174000"
+                      email:
+                        type: string
+                        format: email
+                        example: "john.doe@example.com"
+                      refreshToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      accessToken:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      visitorConversion:
+                        type: object
+                        description: Information about automatic visitor-to-project conversion
+                        properties:
+                          attempted:
+                            type: boolean
+                            example: true
+                            description: Whether conversion was attempted (true if visitor with matching email was found)
+                          success:
+                            type: boolean
+                            example: true
+                            description: Whether conversion succeeded
+                          projectId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                            example: "550e8400-e29b-41d4-a716-446655440000"
+                            description: ID of created project (null if conversion didn't happen or failed)
+                          error:
+                            type: string
+                            nullable: true
+                            example: null
+                            description: Error message if conversion failed (null if successful)
+                          warnings:
+                            type: array
+                            items:
+                              type: string
+                            description: Warning messages about missing/incomplete data during conversion
+                            example:
+                              [
+                                "Estimate not accepted",
+                                "Service agreement not accepted",
+                              ]
+              examples:
+                successfulWithConversion:
+                  value:
+                    success: true
+                    status: 200
+                    message: "User verified successfully"
+                    data:
+                      uid: "123e4567-e89b-12d3-a456-426614174000"
+                      email: "john.doe@example.com"
+                      refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      visitorConversion:
+                        attempted: true
+                        success: true
+                        projectId: "550e8400-e29b-41d4-a716-446655440000"
+                        error: null
+                        warnings: []
+                successfulWithoutConversion:
+                  value:
+                    success: true
+                    status: 200
+                    message: "User verified successfully"
+                    data:
+                      uid: "123e4567-e89b-12d3-a456-426614174000"
+                      email: "john.doe@example.com"
+                      refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      visitorConversion:
+                        attempted: false
+                        success: false
+                        projectId: null
+                        error: null
+                        warnings: []
+                conversionWithWarnings:
+                  value:
+                    success: true
+                    status: 200
+                    message: "User verified successfully"
+                    data:
+                      uid: "123e4567-e89b-12d3-a456-426614174000"
+                      email: "john.doe@example.com"
+                      refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      visitorConversion:
+                        attempted: true
+                        success: true
+                        projectId: "550e8400-e29b-41d4-a716-446655440000"
+                        error: null
+                        warnings:
+                          [
+                            "Estimate not accepted",
+                            "Service agreement not accepted",
+                          ]
+                conversionFailed:
+                  value:
+                    success: true
+                    status: 200
+                    message: "User verified successfully"
+                    data:
+                      uid: "123e4567-e89b-12d3-a456-426614174000"
+                      email: "john.doe@example.com"
+                      refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      visitorConversion:
+                        attempted: true
+                        success: false
+                        projectId: null
+                        error: "Visitor has already been converted to a project"
+                        warnings: []
         "400":
           $ref: "#/components/responses/ValidationError"
         "401":

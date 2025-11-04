@@ -209,6 +209,14 @@ export default {
     });
 
     // Auto-convert visitor to project if applicable
+    const conversionStatus = {
+      attempted: false,
+      success: false,
+      projectId: null as string | null,
+      error: null as string | null,
+      warnings: [] as string[],
+    };
+
     try {
       const visitor = await db.visitor.findFirst({
         where: {
@@ -222,28 +230,37 @@ export default {
         },
       });
 
-      if (visitor && visitor.estimate && visitor.serviceAgreement) {
-        if (
-          visitor.estimate.estimateAccepted &&
-          visitor.serviceAgreement.accepted
-        ) {
-          const { visitorConversionService } = await import(
-            "../../services/visitorConversionService"
-          );
-          // Note: Payment redirect URLs should be passed from frontend during OTP verification
-          // For now, conversion happens without payment. Payment can be initiated separately.
+      // Attempt conversion if visitor exists - project creation is resilient
+      // It will succeed even if estimate/agreement is missing/not accepted
+      if (visitor) {
+        conversionStatus.attempted = true;
+        const { visitorConversionService } = await import(
+          "../../services/visitorConversionService"
+        );
+        // Note: Payment redirect URLs should be passed from frontend during OTP verification
+        // For now, conversion happens without payment. Payment can be initiated separately.
+        const conversionResult =
           await visitorConversionService.convertVisitorToProject(
             visitor.id,
             user.uid,
           );
-          console.log(
-            `Auto-converted visitor ${visitor.id} to project for user ${user.uid}`,
-          );
+        conversionStatus.success = true;
+        conversionStatus.projectId = conversionResult.project.id;
+        if (conversionResult.warnings) {
+          conversionStatus.warnings = conversionResult.warnings;
         }
+        console.log(
+          `Auto-converted visitor ${visitor.id} to project for user ${user.uid}`,
+          conversionResult.warnings
+            ? { warnings: conversionResult.warnings }
+            : {},
+        );
       }
     } catch (error) {
+      conversionStatus.error =
+        error instanceof Error ? error.message : String(error);
       console.error("Error auto-converting visitor to project:", error);
-      // Don't fail verification if conversion fails
+      // Don't fail verification if conversion fails - user can still login
     }
 
     const { generateAccessToken, generateRefreshToken } = tokenGeneratorService;
@@ -269,6 +286,7 @@ export default {
       email: user.email,
       refreshToken,
       accessToken,
+      visitorConversion: conversionStatus,
     });
   }),
   // ********** Send OTP controller *******************
