@@ -14,6 +14,19 @@ interface VisitorQuoteData {
 }
 
 class PDFGenerationService {
+  // Color palette matching the reference PDF
+  private readonly colors = {
+    navyBlue: "#1e3a8a", // Table headers
+    darkBlue: "#1e40af", // Primary text accents
+    textDark: "#1f2937",
+    textGray: "#6b7280",
+    lightGray: "#f3f4f6",
+    border: "#d1d5db",
+    white: "#ffffff",
+    green: "#10b981",
+    lightBlue: "#eff6ff",
+  };
+
   /**
    * Fetch complete visitor data for quote
    */
@@ -46,6 +59,7 @@ class PDFGenerationService {
    * Format text by replacing underscores with spaces and capitalizing
    */
   private formatText(text: string): string {
+    if (!text) return "";
     return text
       .replace(/_/g, " ")
       .split(" ")
@@ -54,7 +68,7 @@ class PDFGenerationService {
   }
 
   /**
-   * Generate PDF from visitor data using PDFKit
+   * Generate PDF from visitor data matching the reference format
    */
   async generateQuotePDF(visitorId: string): Promise<Buffer> {
     const data = await this.fetchVisitorQuoteData(visitorId);
@@ -63,16 +77,8 @@ class PDFGenerationService {
       throw new Error("Visitor not found");
     }
 
-    const {
-      details,
-      services,
-      industries,
-      technologies,
-      features,
-      discount,
-      timeline,
-      estimate,
-    } = data;
+    const { details, services, technologies, discount, timeline, estimate } =
+      data;
 
     return new Promise((resolve, reject) => {
       try {
@@ -87,472 +93,302 @@ class PDFGenerationService {
         doc.on("end", () => resolve(Buffer.concat(chunks)));
         doc.on("error", reject);
 
-        const primaryBlue = "#007aff";
-        const darkGray = "#1d1d1f";
-        const lightGray = "#86868b";
         const pageWidth = doc.page.width - 100; // Account for margins
-
         let yPos = 50;
 
-        // ===== HEADER =====
+        // ===== MAIN HEADER =====
         doc
-          .fontSize(24)
-          .fillColor(primaryBlue)
+          .fontSize(22)
+          .fillColor(this.colors.darkBlue)
           .font("Helvetica-Bold")
-          .text("Prime Logic Solutions", 50, yPos, { width: pageWidth / 2 });
+          .text("PRIME LOGIC SOLUTIONS - Quotation", 50, yPos);
 
-        doc
-          .fontSize(20)
-          .fillColor(darkGray)
-          .font("Helvetica-Bold")
-          .text("Project Proposal", pageWidth / 2 + 50, yPos, {
-            width: pageWidth / 2,
-            align: "right",
-          });
-
-        yPos += 30;
+        yPos += 25;
 
         doc
           .fontSize(10)
-          .fillColor(lightGray)
+          .fillColor(this.colors.textGray)
           .font("Helvetica")
-          .text(
-            new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-            pageWidth / 2 + 50,
-            yPos,
-            { width: pageWidth / 2, align: "right" },
-          );
-
-        yPos += 10;
-
-        // Header line
-        // doc
-        //   .strokeColor(primaryBlue)
-        //   .lineWidth(3)
-        //   .moveTo(50, yPos)
-        //   .lineTo(doc.page.width - 50, yPos)
-        //   .stroke();
-
-        yPos += 30;
-
-        // ===== PROJECT OVERVIEW =====
-        // doc.roundedRect(50, yPos, pageWidth, 80, 20).fillColor("#f5f5f7").fill();
-
-        yPos += 15;
-
-        // doc
-        //   .fontSize(18)
-        //   .fillColor(darkGray)
-        //   .font("Helvetica-Bold")
-        //   .text(details?.projectName || "Untitled Project", 65, yPos, {
-        //     width: pageWidth - 30,
-        //   });
-
-        // yPos += 25;
-
-        // doc
-        //   .fontSize(11)
-        //   .fillColor("#6e6e73")
-        //   .font("Helvetica")
-        //   .text(details?.description || "No description provided", 65, yPos, {
-        //     width: pageWidth - 30,
-        //     lineGap: 3,
-        //   });
-
-        // yPos += 90;
-
-        // ===== CLIENT INFORMATION =====
-        this.addSectionTitle(doc, "Client Information", yPos);
-        yPos += 35;
-
-        const clientInfo = [
-          ["Business Name:", details?.businessName || "N/A"],
-          ["Contact Name:", details?.fullName || "N/A"],
-          ["Email:", details?.businessEmail || "N/A"],
-          ["Phone:", details?.phoneNumber || "N/A"],
-        ];
-
-        for (let i = 0; i < clientInfo.length; i++) {
-          const [label, value] = clientInfo[i]!;
-          const xPos = i % 2 === 0 ? 50 : pageWidth / 2 + 50;
-          const currentY = yPos + Math.floor(i / 2) * 30;
-
-          doc
-            .fontSize(10)
-            .fillColor(lightGray)
-            .font("Helvetica")
-            .text(label, xPos, currentY, { continued: false });
-
-          doc
-            .fontSize(10)
-            .fillColor(darkGray)
-            .font("Helvetica-Bold")
-            .text(value, xPos + 100, currentY, { continued: false });
-        }
-
-        yPos += Math.ceil(clientInfo.length / 2) * 30 + 20;
-
-        // ===== SERVICES =====
-        if (services && services.length > 0) {
-          yPos = this.checkPageBreak(doc, yPos, 100);
-          this.addSectionTitle(doc, "Services Requested", yPos);
-          yPos += 35;
-
-          for (const service of services) {
-            yPos = this.checkPageBreak(doc, yPos, 50);
-
-            doc
-              .fontSize(12)
-              .fillColor(darkGray)
-              .font("Helvetica-Bold")
-              .text(this.formatText(service.name), 50, yPos);
-
-            yPos += 18;
-
-            const childServices = service.childServices || [];
-            const tagsPerRow = 3;
-            let tagCount = 0;
-
-            for (const child of childServices) {
-              const tagX = 50 + (tagCount % tagsPerRow) * 180;
-              const tagY = yPos + Math.floor(tagCount / tagsPerRow) * 22;
-
-              yPos = this.checkPageBreak(doc, tagY, 30);
-
-              doc
-                .roundedRect(tagX, tagY, 170, 18, 9)
-                .fillColor(primaryBlue)
-                .fill();
-
-              doc
-                .fontSize(9)
-                .fillColor("#ffffff")
-                .font("Helvetica-Bold")
-                .text(this.formatText(child), tagX + 10, tagY + 4, {
-                  width: 150,
-                });
-
-              tagCount++;
-            }
-
-            yPos += Math.ceil(childServices.length / tagsPerRow) * 22 + 15;
-          }
-
-          yPos += 10;
-        }
-
-        // ===== INDUSTRIES =====
-        if (industries && industries.length > 0) {
-          yPos = this.checkPageBreak(doc, yPos, 100);
-          this.addSectionTitle(doc, "Target Industries", yPos);
-          yPos += 35;
-
-          for (const industry of industries) {
-            yPos = this.checkPageBreak(doc, yPos, 50);
-
-            doc
-              .fontSize(12)
-              .fillColor(darkGray)
-              .font("Helvetica-Bold")
-              .text(this.formatText(industry.category), 50, yPos);
-
-            yPos += 18;
-
-            const subIndustries = industry.subIndustries || [];
-            const tagsPerRow = 3;
-            let tagCount = 0;
-
-            for (const sub of subIndustries) {
-              const tagX = 50 + (tagCount % tagsPerRow) * 180;
-              const tagY = yPos + Math.floor(tagCount / tagsPerRow) * 22;
-
-              yPos = this.checkPageBreak(doc, tagY, 30);
-
-              doc
-                .roundedRect(tagX, tagY, 170, 18, 9)
-                .fillColor(primaryBlue)
-                .fill();
-
-              doc
-                .fontSize(9)
-                .fillColor("#ffffff")
-                .font("Helvetica-Bold")
-                .text(this.formatText(sub), tagX + 10, tagY + 4, {
-                  width: 150,
-                });
-
-              tagCount++;
-            }
-
-            yPos += Math.ceil(subIndustries.length / tagsPerRow) * 22 + 15;
-          }
-
-          yPos += 10;
-        }
-
-        // ===== TECHNOLOGIES =====
-        if (technologies && technologies.length > 0) {
-          yPos = this.checkPageBreak(doc, yPos, 100);
-          this.addSectionTitle(doc, "Technologies", yPos);
-          yPos += 35;
-
-          const allTech = technologies.flatMap((t) => t.technologies || []);
-          const tagsPerRow = 3;
-
-          for (let i = 0; i < allTech.length; i++) {
-            const tagX = 50 + (i % tagsPerRow) * 180;
-            const tagY = yPos + Math.floor(i / tagsPerRow) * 22;
-
-            yPos = this.checkPageBreak(doc, tagY, 30);
-
-            doc
-              .roundedRect(tagX, tagY, 170, 18, 9)
-              .fillColor(primaryBlue)
-              .fill();
-
-            doc
-              .fontSize(9)
-              .fillColor("#ffffff")
-              .font("Helvetica-Bold")
-              .text(this.formatText(allTech[i]), tagX + 10, tagY + 4, {
-                width: 150,
-              });
-          }
-
-          yPos += Math.ceil(allTech.length / tagsPerRow) * 22 + 20;
-        }
-
-        // ===== FEATURES =====
-        if (features && features.length > 0) {
-          yPos = this.checkPageBreak(doc, yPos, 100);
-          this.addSectionTitle(doc, "Features & Functionality", yPos);
-          yPos += 35;
-
-          const allFeatures = features.flatMap((f) => f.features || []);
-          const tagsPerRow = 3;
-
-          for (let i = 0; i < allFeatures.length; i++) {
-            const tagX = 50 + (i % tagsPerRow) * 180;
-            const tagY = yPos + Math.floor(i / tagsPerRow) * 22;
-
-            yPos = this.checkPageBreak(doc, tagY, 30);
-
-            doc
-              .roundedRect(tagX, tagY, 170, 18, 9)
-              .fillColor(primaryBlue)
-              .fill();
-
-            doc
-              .fontSize(9)
-              .fillColor("#ffffff")
-              .font("Helvetica-Bold")
-              .text(this.formatText(allFeatures[i]), tagX + 10, tagY + 4, {
-                width: 150,
-              });
-          }
-
-          yPos += Math.ceil(allFeatures.length / tagsPerRow) * 22 + 20;
-        }
-
-        // ===== TIMELINE & TERMS =====
-        yPos = this.checkPageBreak(doc, yPos, 150);
-        this.addSectionTitle(doc, "Project Timeline & Terms", yPos);
-        yPos += 35;
-
-        if (timeline) {
-          this.addInfoRow(
-            doc,
-            "Timeline Option:",
-            this.formatText(timeline.option),
-            yPos,
-          );
-          yPos += 25;
-          this.addInfoRow(
-            doc,
-            "Estimated Duration:",
-            `${timeline.estimatedDays} days`,
-            yPos,
-          );
-          yPos += 25;
-          this.addInfoRow(
-            doc,
-            "Rush Fee:",
-            `${timeline.rushFeePercent}%`,
-            yPos,
-          );
-          yPos += 25;
-        }
-
-        if (discount) {
-          this.addInfoRow(
-            doc,
-            "Discount Type:",
-            this.formatText(discount.type),
-            yPos,
-          );
-          yPos += 25;
-          this.addInfoRow(doc, "Discount:", `${discount.percent}%`, yPos);
-          yPos += 25;
-        }
-
-        yPos += 20;
-
-        // ===== PRICING =====
-        yPos = this.checkPageBreak(doc, yPos, 250);
-
-        // Blue gradient box for pricing
-        doc
-          .roundedRect(50, yPos, pageWidth, 220, 12)
-          .fillColor("#007aff")
-          .fill();
-
-        yPos += 20;
-
-        doc
-          .fontSize(16)
-          .fillColor("#ffffff")
-          .font("Helvetica-Bold")
-          .text("Investment Breakdown", 70, yPos);
+          .text("United States of America", 50, yPos);
 
         yPos += 35;
 
-        if (estimate) {
-          // Base Cost
-          this.addPricingRow(
-            doc,
-            "Base Cost:",
-            `$${Number(estimate.baseCost).toLocaleString()}`,
-            yPos,
-            false,
-          );
-          yPos += 25;
+        // ===== CLIENT INFO TABLE =====
+        const tableTop = yPos;
+        const tableHeight = 85;
+        const col1Width = pageWidth / 2;
 
-          // Discount
-          doc
-            .fontSize(11)
-            .fillColor("#4ade80")
-            .font("Helvetica")
-            .text(`Discount (${discount?.percent || 0}%):`, 70, yPos, {
-              width: pageWidth - 40,
-              continued: true,
-            })
-            .text(`-$${Number(estimate.discountAmount).toLocaleString()}`, {
-              align: "right",
-            });
-          yPos += 25;
-
-          // Rush Fee
-          this.addPricingRow(
-            doc,
-            `Rush Fee (${timeline?.rushFeePercent || 0}%):`,
-            `+$${Number(estimate.rushFeeAmount).toLocaleString()}`,
-            yPos,
-            false,
-          );
-          yPos += 25;
-
-          // Divider line
-          doc
-            .strokeColor("rgba(255, 255, 255, 0.3)")
-            .lineWidth(2)
-            .moveTo(70, yPos)
-            .lineTo(doc.page.width - 70, yPos)
-            .stroke();
-
-          yPos += 20;
-
-          // Calculated Total
-          this.addPricingRow(
-            doc,
-            "Calculated Total:",
-            `$${Number(estimate.calculatedTotal).toLocaleString()}`,
-            yPos,
-            true,
-          );
-          yPos += 30;
-
-          // Divider line
-          doc
-            .strokeColor("rgba(255, 255, 255, 0.4)")
-            .lineWidth(3)
-            .moveTo(70, yPos)
-            .lineTo(doc.page.width - 70, yPos)
-            .stroke();
-
-          yPos += 20;
-
-          // Final Price Range
-          doc
-            .fontSize(14)
-            .fillColor("#ffffff")
-            .font("Helvetica-Bold")
-            .text("Estimated Price Range:", 70, yPos, {
-              width: pageWidth - 40,
-              continued: true,
-            })
-            .text(
-              `$${Number(estimate.estimateFinalPriceMin).toLocaleString()} - $${Number(estimate.estimateFinalPriceMax).toLocaleString()}`,
-              { align: "right" },
-            );
-        }
-
-        yPos += 50;
-
-        // ===== FOOTER =====
-        yPos = this.checkPageBreak(doc, yPos, 100);
-        yPos += 20;
-
+        // Table border
         doc
-          .strokeColor("#f5f5f7")
-          .lineWidth(2)
-          .moveTo(50, yPos)
-          .lineTo(doc.page.width - 50, yPos)
+          .rect(50, tableTop, pageWidth, tableHeight)
+          .strokeColor(this.colors.border)
+          .lineWidth(1)
           .stroke();
 
-        yPos += 30;
-
+        // Vertical divider
         doc
-          .fontSize(12)
-          .fillColor(primaryBlue)
-          .font("Helvetica-Bold")
-          .text("Prime Logic Solutions", 50, yPos, {
-            width: pageWidth,
-            align: "center",
-          });
+          .moveTo(50 + col1Width, tableTop)
+          .lineTo(50 + col1Width, tableTop + tableHeight)
+          .stroke();
 
-        yPos += 18;
+        // Horizontal dividers
+        for (let i = 1; i <= 2; i++) {
+          const dividerY = tableTop + (tableHeight / 3) * i;
+          doc
+            .moveTo(50, dividerY)
+            .lineTo(50 + pageWidth, dividerY)
+            .stroke();
+        }
+
+        // Generate Quote ID and Date
+        const quoteDate = new Date();
+        const quoteId = `PLS-${quoteDate.getFullYear()}-${String(Date.now()).slice(-3)}`;
+        const dateIssued = quoteDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+        const validDate = new Date(quoteDate);
+        validDate.setDate(validDate.getDate() + 30);
+        const validUntil = validDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+
+        // Row 1: Client/Company and Quote #
+        let rowY = tableTop + 12;
+        const labelWidth = 110;
+        const leftColValueX = 60 + labelWidth;
+        const leftColValueWidth = col1Width - labelWidth - 20;
+        const rightColLabelX = 50 + col1Width + 10;
+        const rightColValueX = rightColLabelX + 80;
 
         doc
           .fontSize(9)
-          .fillColor(lightGray)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Client / Company", 60, rowY);
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
           .font("Helvetica")
           .text(
-            "A non-commercial platform empowering independent professionals",
-            50,
-            yPos,
-            { width: pageWidth, align: "center" },
+            details?.companyName || details?.businessName || "N/A",
+            leftColValueX,
+            rowY,
+            {
+              width: leftColValueWidth,
+              lineBreak: true,
+            },
           );
 
-        yPos += 14;
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Quote #", rightColLabelX, rowY);
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(quoteId, rightColValueX, rowY);
 
-        doc.text(
-          `© ${new Date().getFullYear()} PrimeLogic. All rights reserved.`,
-          50,
+        // Row 2: Contact and Date Issued
+        rowY = tableTop + 12 + tableHeight / 3;
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Contact", 60, rowY);
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(details?.fullName || "N/A", leftColValueX, rowY, {
+            width: leftColValueWidth,
+          });
+
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Date Issued", rightColLabelX, rowY);
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(dateIssued, rightColValueX, rowY);
+
+        // Row 3: Email/Phone and Valid Until
+        rowY = tableTop + 12 + (tableHeight / 3) * 2;
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Email / Phone", 60, rowY);
+
+        // Split email and phone into two lines for better fit
+        const emailText = details?.businessEmail || "N/A";
+        const phoneText = details?.phoneNumber || "";
+
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(emailText, leftColValueX, rowY, {
+            width: leftColValueWidth,
+          });
+
+        if (phoneText) {
+          doc
+            .fontSize(9)
+            .fillColor(this.colors.textDark)
+            .font("Helvetica")
+            .text(`• ${phoneText}`, leftColValueX, rowY + 10, {
+              width: leftColValueWidth,
+            });
+        }
+
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica")
+          .text("Valid Until", rightColLabelX, rowY);
+        doc
+          .fontSize(9)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(validUntil, rightColValueX, rowY);
+
+        yPos = tableTop + tableHeight + 30;
+
+        // ===== PROJECT OVERVIEW =====
+        yPos = this.checkPageBreak(doc, yPos, 100);
+        doc
+          .fontSize(14)
+          .fillColor(this.colors.darkBlue)
+          .font("Helvetica-Bold")
+          .text("Project Overview", 50, yPos);
+
+        yPos += 20;
+
+        // Generate project description from services
+        const servicesList = services
+          .map((s) => this.formatText(s.name))
+          .join(", ");
+        const projectDesc = `Prime Logic Solutions (PLS) proposes to design and develop a comprehensive software solution for ${details?.companyName || details?.businessName || "your organization"}, including ${servicesList}, with modern technology stack and best practices implementation.`;
+
+        doc
+          .fontSize(10)
+          .fillColor(this.colors.textDark)
+          .font("Helvetica")
+          .text(projectDesc, 50, yPos, {
+            width: pageWidth,
+            align: "justify",
+            lineGap: 3,
+          });
+
+        yPos += 60;
+
+        // ===== PROPOSED TECHNOLOGY STACK =====
+        yPos = this.checkPageBreak(doc, yPos, 150);
+        doc
+          .fontSize(14)
+          .fillColor(this.colors.darkBlue)
+          .font("Helvetica-Bold")
+          .text("Proposed Technology Stack", 50, yPos);
+
+        yPos += 20;
+
+        // Technology Stack Table
+        const techStackTable = this.buildTechnologyStackTable(technologies);
+        yPos = this.drawTechnologyTable(doc, techStackTable, yPos, pageWidth);
+
+        yPos += 30;
+
+        // ===== SCOPE OF WORK =====
+        yPos = this.checkPageBreak(doc, yPos, 200);
+        doc
+          .fontSize(14)
+          .fillColor(this.colors.darkBlue)
+          .font("Helvetica-Bold")
+          .text("Scope of Work", 50, yPos);
+
+        yPos += 20;
+
+        // Scope of Work Table
+        yPos = this.drawScopeOfWorkTable(
+          doc,
+          services,
+          estimate,
+          discount,
           yPos,
-          { width: pageWidth, align: "center" },
+          pageWidth,
         );
 
-        yPos += 14;
+        yPos += 30;
 
-        doc.fillColor(primaryBlue).text("primelogicsol.com", 50, yPos, {
-          width: pageWidth,
-          align: "center",
-          link: "https://primelogicsol.com",
-        });
+        // ===== TIMELINE =====
+        yPos = this.checkPageBreak(doc, yPos, 180);
+        doc
+          .fontSize(14)
+          .fillColor(this.colors.darkBlue)
+          .font("Helvetica-Bold")
+          .text("Timeline", 50, yPos);
+
+        yPos += 20;
+
+        yPos = this.drawTimelineTable(doc, timeline, yPos, pageWidth);
+
+        yPos += 30;
+
+        // ===== COMMERCIAL TERMS =====
+        yPos = this.checkPageBreak(doc, yPos, 180);
+        doc
+          .fontSize(14)
+          .fillColor(this.colors.darkBlue)
+          .font("Helvetica-Bold")
+          .text("Commercial Terms (Highlights)", 50, yPos);
+
+        yPos += 20;
+
+        const terms = [
+          "Payment Schedule: 40% kickoff · 40% on milestone acceptance · 20% on final delivery.",
+          "Quotation Validity: 30 days from issue date. Taxes and third party fees excluded unless stated.",
+          "Support: 30 day postlaunch warranty for bug fixes (scope-limited).",
+          "IP: Work-for-hire; full ownership transfers upon final payment.",
+          "Confidentiality: Project specific NDA applies to all parties.",
+        ];
+
+        doc.fontSize(10).fillColor(this.colors.textDark).font("Helvetica");
+
+        for (const term of terms) {
+          yPos = this.checkPageBreak(doc, yPos, 25);
+          doc.text(`• ${term}`, 50, yPos, {
+            width: pageWidth,
+            lineGap: 3,
+          });
+          yPos += 18;
+        }
+
+        yPos += 20;
+
+        // ===== CLOSING MESSAGE =====
+        yPos = this.checkPageBreak(doc, yPos, 40);
+        doc
+          .fontSize(10)
+          .fillColor(this.colors.textGray)
+          .font("Helvetica-Oblique")
+          .text(
+            "Thank you for considering Prime Logic Solutions. We look forward to building with you.",
+            50,
+            yPos,
+            {
+              width: pageWidth,
+              align: "left",
+            },
+          );
 
         doc.end();
       } catch (error) {
@@ -562,71 +398,487 @@ class PDFGenerationService {
   }
 
   /**
-   * Add section title
+   * Build technology stack table data
    */
-  private addSectionTitle(
+  private buildTechnologyStackTable(
+    technologies: any[],
+  ): { label: string; value: string }[] {
+    const techMap: { [key: string]: string[] } = {
+      Frontend: [],
+      Backend: [],
+      Database: [],
+      Mobile: [],
+      "Cloud & DevOps": [],
+      Security: [],
+      "AI & Analytics": [],
+    };
+
+    for (const tech of technologies) {
+      const category = this.formatText(tech.category);
+      const techs = tech.technologies.map((t: string) => this.formatText(t));
+
+      if (category.includes("Frontend")) {
+        techMap.Frontend?.push(...techs);
+      } else if (category.includes("Backend")) {
+        techMap.Backend?.push(...techs);
+      } else if (category.includes("Database")) {
+        techMap.Database?.push(...techs);
+      } else if (category.includes("Mobile")) {
+        techMap.Mobile?.push(...techs);
+      } else if (
+        category.includes("Devops") ||
+        category.includes("Infrastructure")
+      ) {
+        techMap["Cloud & DevOps"]?.push(...techs);
+      }
+    }
+
+    const result: { label: string; value: string }[] = [];
+    for (const [key, values] of Object.entries(techMap)) {
+      if (values.length > 0) {
+        result.push({ label: key, value: values.join(", ") });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Draw technology stack table
+   */
+  private drawTechnologyTable(
     doc: PDFKit.PDFDocument,
-    title: string,
-    yPos: number,
-  ) {
+    techData: { label: string; value: string }[],
+    startY: number,
+    pageWidth: number,
+  ): number {
+    const rowHeight = 30;
+    const labelWidth = 120;
+    const valueWidth = pageWidth - labelWidth;
+    let currentY = startY;
+
+    // Draw header
     doc
-      .fontSize(14)
-      .fillColor("#1d1d1f")
-      .font("Helvetica-Bold")
-      .text(title, 50, yPos);
+      .rect(50, currentY, pageWidth, rowHeight)
+      .fillColor(this.colors.lightBlue)
+      .fill();
 
     doc
-      .strokeColor("#f5f5f7")
-      .lineWidth(2)
-      .moveTo(50, yPos + 20)
-      .lineTo(doc.page.width - 50, yPos + 20)
+      .strokeColor(this.colors.border)
+      .lineWidth(1)
+      .rect(50, currentY, pageWidth, rowHeight)
       .stroke();
-  }
-
-  /**
-   * Add info row (label + value)
-   */
-  private addInfoRow(
-    doc: PDFKit.PDFDocument,
-    label: string,
-    value: string,
-    yPos: number,
-  ) {
-    doc
-      .fontSize(10)
-      .fillColor("#86868b")
-      .font("Helvetica")
-      .text(label, 50, yPos, { width: 250, continued: false });
 
     doc
       .fontSize(10)
-      .fillColor("#1d1d1f")
+      .fillColor(this.colors.textDark)
       .font("Helvetica-Bold")
-      .text(value, 300, yPos, { align: "right" });
+      .text("Category", 60, currentY + 10);
+
+    doc.text("Technologies", 50 + labelWidth + 10, currentY + 10);
+
+    currentY += rowHeight;
+
+    // Draw rows
+    for (let i = 0; i < techData.length; i++) {
+      const item = techData[i];
+      if (!item) continue;
+
+      const isEven = i % 2 === 0;
+
+      // Calculate row height based on text
+      const textHeight = doc.heightOfString(item.value, {
+        width: valueWidth - 20,
+      });
+      const actualRowHeight = Math.max(30, textHeight + 20);
+
+      currentY = this.checkPageBreak(doc, currentY, actualRowHeight + 10);
+
+      // Background
+      if (isEven) {
+        doc
+          .rect(50, currentY, pageWidth, actualRowHeight)
+          .fillColor(this.colors.lightGray)
+          .fill();
+      }
+
+      // Borders
+      doc
+        .strokeColor(this.colors.border)
+        .lineWidth(1)
+        .rect(50, currentY, pageWidth, actualRowHeight)
+        .stroke();
+
+      // Vertical line
+      doc
+        .moveTo(50 + labelWidth, currentY)
+        .lineTo(50 + labelWidth, currentY + actualRowHeight)
+        .stroke();
+
+      // Label
+      doc
+        .fontSize(9)
+        .fillColor(this.colors.textDark)
+        .font("Helvetica")
+        .text(item.label, 60, currentY + 10, {
+          width: labelWidth - 20,
+        });
+
+      // Value
+      doc
+        .fontSize(9)
+        .fillColor(this.colors.textDark)
+        .font("Helvetica")
+        .text(item.value, 50 + labelWidth + 10, currentY + 10, {
+          width: valueWidth - 20,
+        });
+
+      currentY += actualRowHeight;
+    }
+
+    return currentY;
   }
 
   /**
-   * Add pricing row (for the blue pricing box)
+   * Draw Scope of Work pricing table
    */
-  private addPricingRow(
+  private drawScopeOfWorkTable(
     doc: PDFKit.PDFDocument,
-    label: string,
-    value: string,
-    yPos: number,
-    bold: boolean = false,
-  ) {
-    const fontSize = bold ? 12 : 11;
-    const font = bold ? "Helvetica-Bold" : "Helvetica";
+    services: any[],
+    estimate: any,
+    discount: any,
+    startY: number,
+    pageWidth: number,
+  ): number {
+    let currentY = startY;
+    const colWidths = [40, 150, pageWidth - 290, 100]; // #, Module, Description, Amount
+    const rowHeight = 30;
+
+    // Table header
+    doc
+      .rect(50, currentY, pageWidth, rowHeight)
+      .fillColor(this.colors.navyBlue)
+      .fill();
 
     doc
-      .fontSize(fontSize)
-      .fillColor("#ffffff")
-      .font(font)
-      .text(label, 70, yPos, {
-        width: doc.page.width - 140,
-        continued: true,
-      })
-      .text(value, { align: "right" });
+      .strokeColor(this.colors.border)
+      .lineWidth(1)
+      .rect(50, currentY, pageWidth, rowHeight)
+      .stroke();
+
+    let xPos = 50;
+    const headers = ["#", "Module / Feature", "Description", "Amount (USD)"];
+
+    doc.fontSize(10).fillColor(this.colors.white).font("Helvetica-Bold");
+
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      const colWidth = colWidths[i];
+      if (header && colWidth) {
+        doc.text(header, xPos + 10, currentY + 10, {
+          width: colWidth - 20,
+          align: i === 3 ? "right" : "left",
+        });
+        xPos += colWidth;
+      }
+    }
+
+    currentY += rowHeight;
+
+    // Build rows from services
+    const rows: { module: string; description: string; amount: number }[] = [];
+    const baseCost = Number(estimate?.baseCost || 0);
+    const serviceCount = services.length;
+    const avgPerService = serviceCount > 0 ? baseCost / serviceCount : baseCost;
+
+    for (const service of services) {
+      const childServices = service.childServices || [];
+      rows.push({
+        module: this.formatText(service.name),
+        description: childServices
+          .map((c: string) => this.formatText(c))
+          .join(", "),
+        amount: avgPerService,
+      });
+    }
+
+    // Draw data rows
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+
+      const isEven = i % 2 === 0;
+
+      // Calculate row height based on description
+      const descHeight = doc.heightOfString(row.description, {
+        width: colWidths[2]! - 20,
+      });
+      const actualRowHeight = Math.max(30, descHeight + 20);
+
+      currentY = this.checkPageBreak(doc, currentY, actualRowHeight + 10);
+
+      // Background
+      if (isEven) {
+        doc
+          .rect(50, currentY, pageWidth, actualRowHeight)
+          .fillColor(this.colors.lightGray)
+          .fill();
+      }
+
+      // Border
+      doc
+        .strokeColor(this.colors.border)
+        .lineWidth(1)
+        .rect(50, currentY, pageWidth, actualRowHeight)
+        .stroke();
+
+      // Vertical lines
+      xPos = 50;
+      for (let j = 0; j < colWidths.length - 1; j++) {
+        xPos += colWidths[j]!;
+        doc
+          .moveTo(xPos, currentY)
+          .lineTo(xPos, currentY + actualRowHeight)
+          .stroke();
+      }
+
+      // Data
+      doc.fontSize(9).fillColor(this.colors.textDark).font("Helvetica");
+
+      // Number
+      doc.text(`${i + 1}`, 60, currentY + 10, {
+        width: colWidths[0]! - 20,
+        align: "center",
+      });
+
+      // Module
+      doc
+        .font("Helvetica-Bold")
+        .text(row.module, 50 + colWidths[0]! + 10, currentY + 10, {
+          width: colWidths[1]! - 20,
+        });
+
+      // Description
+      doc
+        .font("Helvetica")
+        .text(
+          row.description,
+          50 + colWidths[0]! + colWidths[1]! + 10,
+          currentY + 10,
+          {
+            width: colWidths[2]! - 20,
+          },
+        );
+
+      // Amount
+      doc
+        .font("Helvetica")
+        .text(
+          `$${Math.round(row.amount).toLocaleString()}`,
+          50 + colWidths[0]! + colWidths[1]! + colWidths[2]! + 10,
+          currentY + 10,
+          {
+            width: colWidths[3]! - 20,
+            align: "right",
+          },
+        );
+
+      currentY += actualRowHeight;
+    }
+
+    // Summary rows
+    const summaryRows = [
+      {
+        label: "Subtotal",
+        value: `$${Number(estimate?.baseCost || 0).toLocaleString()}`,
+        bold: false,
+      },
+      {
+        label: `Discount (${discount?.percent || 0}%)`,
+        value: `-$${Number(estimate?.discountAmount || 0).toLocaleString()}`,
+        bold: false,
+        green: true,
+      },
+      {
+        label: "Estimated Total",
+        value: `$${Number(estimate?.calculatedTotal || 0).toLocaleString()}`,
+        bold: true,
+        highlight: true,
+      },
+    ];
+
+    for (const sumRow of summaryRows) {
+      currentY = this.checkPageBreak(doc, currentY, rowHeight + 10);
+
+      // Background for estimated total
+      if (sumRow.highlight) {
+        doc
+          .rect(50, currentY, pageWidth, rowHeight)
+          .fillColor("#ecfdf5")
+          .fill();
+      }
+
+      // Border
+      doc
+        .strokeColor(this.colors.border)
+        .lineWidth(1)
+        .rect(50, currentY, pageWidth, rowHeight)
+        .stroke();
+
+      // Label
+      const labelX = 50 + (colWidths[0] || 0) + (colWidths[1] || 0) + 10;
+      doc
+        .fontSize(sumRow.bold ? 11 : 10)
+        .fillColor(sumRow.green ? this.colors.green : this.colors.textDark)
+        .font(sumRow.bold ? "Helvetica-Bold" : "Helvetica")
+        .text(sumRow.label, labelX, currentY + 10);
+
+      // Value
+      const valueX =
+        50 +
+        (colWidths[0] || 0) +
+        (colWidths[1] || 0) +
+        (colWidths[2] || 0) +
+        10;
+      doc
+        .fontSize(sumRow.bold ? 12 : 10)
+        .fillColor(sumRow.green ? this.colors.green : this.colors.textDark)
+        .font(sumRow.bold ? "Helvetica-Bold" : "Helvetica")
+        .text(sumRow.value, valueX, currentY + 10, {
+          width: (colWidths[3] || 100) - 20,
+          align: "right",
+        });
+
+      currentY += rowHeight;
+    }
+
+    return currentY;
+  }
+
+  /**
+   * Draw timeline table
+   */
+  private drawTimelineTable(
+    doc: PDFKit.PDFDocument,
+    timeline: any,
+    startY: number,
+    pageWidth: number,
+  ): number {
+    let currentY = startY;
+    const colWidths = [pageWidth * 0.3, pageWidth * 0.2, pageWidth * 0.5];
+    const rowHeight = 30;
+
+    // Header
+    doc
+      .rect(50, currentY, pageWidth, rowHeight)
+      .fillColor(this.colors.navyBlue)
+      .fill();
+
+    doc
+      .strokeColor(this.colors.border)
+      .lineWidth(1)
+      .rect(50, currentY, pageWidth, rowHeight)
+      .stroke();
+
+    const headers = ["Phase", "Duration", "Deliverables"];
+    let xPos = 50;
+
+    doc.fontSize(10).fillColor(this.colors.white).font("Helvetica-Bold");
+
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      const colWidth = colWidths[i];
+      if (header && colWidth) {
+        doc.text(header, xPos + 10, currentY + 10, {
+          width: colWidth - 20,
+        });
+        xPos += colWidth;
+      }
+    }
+
+    currentY += rowHeight;
+
+    // Timeline data
+    const estimatedDays = timeline?.estimatedDays || 90;
+    const phases = [
+      {
+        phase: "Discovery & Planning",
+        duration: `${Math.round(estimatedDays * 0.15)} days`,
+        deliverables: "SOW, architecture, backlog",
+      },
+      {
+        phase: "Design & Prototyping",
+        duration: `${Math.round(estimatedDays * 0.2)} days`,
+        deliverables: "Wireframes, UI kit, clickable prototype",
+      },
+      {
+        phase: "Development & QA",
+        duration: `${Math.round(estimatedDays * 0.5)} days`,
+        deliverables: "Feature-complete build, test reports",
+      },
+      {
+        phase: "Deployment & Handover",
+        duration: `${Math.round(estimatedDays * 0.15)} days`,
+        deliverables: "Production release, docs, training",
+      },
+    ];
+
+    // Draw rows
+    for (let i = 0; i < phases.length; i++) {
+      const phase = phases[i];
+      if (!phase) continue;
+
+      const isEven = i % 2 === 0;
+
+      currentY = this.checkPageBreak(doc, currentY, rowHeight + 10);
+
+      // Background
+      if (isEven) {
+        doc
+          .rect(50, currentY, pageWidth, rowHeight)
+          .fillColor(this.colors.lightGray)
+          .fill();
+      }
+
+      // Border
+      doc
+        .strokeColor(this.colors.border)
+        .lineWidth(1)
+        .rect(50, currentY, pageWidth, rowHeight)
+        .stroke();
+
+      // Vertical lines
+      xPos = 50;
+      for (let j = 0; j < colWidths.length - 1; j++) {
+        xPos += colWidths[j]!;
+        doc
+          .moveTo(xPos, currentY)
+          .lineTo(xPos, currentY + rowHeight)
+          .stroke();
+      }
+
+      // Data
+      doc.fontSize(9).fillColor(this.colors.textDark).font("Helvetica");
+
+      xPos = 50;
+      doc.text(phase.phase, xPos + 10, currentY + 10, {
+        width: colWidths[0]! - 20,
+      });
+
+      xPos += colWidths[0]!;
+      doc.text(phase.duration, xPos + 10, currentY + 10, {
+        width: colWidths[1]! - 20,
+      });
+
+      xPos += colWidths[1]!;
+      doc.text(phase.deliverables, xPos + 10, currentY + 10, {
+        width: colWidths[2]! - 20,
+      });
+
+      currentY += rowHeight;
+    }
+
+    return currentY;
   }
 
   /**
@@ -637,9 +889,9 @@ class PDFGenerationService {
     yPos: number,
     requiredSpace: number,
   ): number {
-    if (yPos + requiredSpace > doc.page.height - 50) {
+    if (yPos + requiredSpace > doc.page.height - 60) {
       doc.addPage();
-      return 50; // Reset to top margin
+      return 50;
     }
     return yPos;
   }
