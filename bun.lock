@@ -14,6 +14,7 @@
         "colorette": "^2.0.20",
         "copyfiles": "^2.4.1",
         "cors": "^2.8.5",
+        "csv-parse": "^6.1.0",
         "dotenv": "^17.2.1",
         "dotenv-flow": "^4.1.0",
         "error-stack-parser": "^2.1.4",
@@ -40,6 +41,7 @@
         "@types/bcrypt": "^5.0.2",
         "@types/bcryptjs": "^3.0.0",
         "@types/cors": "^2.8.17",
+        "@types/csv-parse": "^1.1.12",
         "@types/eslint": "^9.6.1",
         "@types/express": "^5.0.0",
         "@types/jsonwebtoken": "^9.0.7",
@@ -195,6 +197,8 @@
     "@types/cookiejar": ["@types/cookiejar@2.1.5", "", {}, ""],
 
     "@types/cors": ["@types/cors@2.8.17", "", { "dependencies": { "@types/node": "*" } }, ""],
+
+    "@types/csv-parse": ["@types/csv-parse@1.2.5", "", { "dependencies": { "csv-parse": "*" } }, "sha512-3PoFyWeuFGqale09vFydLQ6IGdvD+mizcXcB8s6ImWv+830IF0HckvewgcGVfGnTFImqvfvhpYZYod2QqGGGdg=="],
 
     "@types/eslint": ["@types/eslint@9.6.1", "", { "dependencies": { "@types/estree": "*", "@types/json-schema": "*" } }, ""],
 
@@ -415,6 +419,8 @@
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, ""],
 
     "crypto-js": ["crypto-js@4.2.0", "", {}, "sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q=="],
+
+    "csv-parse": ["csv-parse@6.1.0", "", {}, "sha512-CEE+jwpgLn+MmtCpVcPtiCZpVtB6Z2OKPTr34pycYYoL7sxdOkXDdQ4lRiw6ioC0q6BLqhc6cKweCVvral8yhw=="],
 
     "dargs": ["dargs@8.1.0", "", {}, ""],
 

@@ -469,6 +469,42 @@ export const blogPostSchema = z.object({
     .min(1, { message: "blogBody is required!!" })
     .min(3, { message: "blogBody must be at least 3 characters long." }),
 });
+
+// ** Bulk Blog Upload Schema
+export const bulkBlogUploadSchema = z.object({
+  blogs: z
+    .array(
+      z.object({
+        blogTitle: z
+          .string({ message: "blogTitle is required!!" })
+          .min(3, { message: "blogTitle must be at least 3 characters long." })
+          .max(450, {
+            message: "blogTitle can be at most 450 characters long.",
+          }),
+        blogThumbnail: z
+          .string({ message: "blogThumbnail is required!!" })
+          .min(3, {
+            message: "blogThumbnail must be at least 3 characters long.",
+          })
+          .max(450, {
+            message: "blogThumbnail can be at most 450 characters long.",
+          }),
+        blogOverview: z
+          .string({ message: "blogOverview is required!!" })
+          .min(3, {
+            message: "blogOverview must be at least 3 characters long.",
+          })
+          .max(650, {
+            message: "blogOverview can be at most 650 characters long.",
+          }),
+        blogBody: z
+          .string({ message: "blogBody is required!!" })
+          .min(3, { message: "blogBody must be at least 3 characters long." }),
+        isPublished: z.boolean().optional(),
+      }),
+    )
+    .min(1, { message: "At least one blog is required for bulk upload" }),
+});
 // ** MileStone Schema (NEW - Updated with freelancer and moderator fields)
 export const MilestoneSchema = z.object({
   milestoneName: z
