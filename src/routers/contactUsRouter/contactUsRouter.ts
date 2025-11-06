@@ -11,19 +11,18 @@ contactUsRouter
   // this route only for client
   .route("/createMessage")
   .post(
-    //   authMiddleware.checkToken,
-    validateDataMiddleware(contactUsSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
         res,
         next,
         1,
-        undefined,
-        1,
+        "Too many contact form submissions. Please try again in 5 minutes.",
         5,
+        300,
         "contact_us",
       ),
+    validateDataMiddleware(contactUsSchema),
     contactUsController.createMessage,
   );
 contactUsRouter

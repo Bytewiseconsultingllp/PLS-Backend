@@ -1,6 +1,7 @@
 import { Router } from "express";
 import freelancerController from "../../controllers/freeLancerController/freelancerController";
 import authMiddleware from "../../middlewares/authMiddleware";
+import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
 
 const router = Router();
 
@@ -15,6 +16,17 @@ const router = Router();
  */
 router.post(
   "/accept-platform-agreement",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many platform agreement attempts. Please try again in 15 minutes.",
+      3,
+      900,
+      "freelancer_accept_agreement",
+    ),
   freelancerController.acceptPlatformAgreement,
 );
 
@@ -23,7 +35,21 @@ router.post(
  * @desc    Register as a freelancer
  * @access  Public
  */
-router.post("/register", freelancerController.registerFreelancer);
+router.post(
+  "/register",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many registration attempts. Please try again in 15 minutes.",
+      3,
+      900,
+      "freelancer_register",
+    ),
+  freelancerController.registerFreelancer,
+);
 
 // ============================================
 // PROTECTED ROUTES (FREELANCER ONLY)

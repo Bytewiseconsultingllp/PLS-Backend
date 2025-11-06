@@ -1,6 +1,7 @@
 import { Router } from "express";
 import visitorsController from "../../controllers/visitorsController/newVisitorsController";
 import authMiddleware from "../../middlewares/authMiddleware";
+import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
 
 const router = Router();
 
@@ -9,21 +10,63 @@ const router = Router();
  * @desc    Step 1: Create visitor with basic details
  * @access  Public
  */
-router.post("/create", visitorsController.createVisitorWithDetails);
+router.post(
+  "/create",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many visitor creation attempts. Please try again in 1 hour.",
+      5,
+      3600,
+      "visitor_create",
+    ),
+  visitorsController.createVisitorWithDetails,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/services
  * @desc    Step 2: Add service selections for visitor
  * @access  Public
  */
-router.post("/:visitorId/services", visitorsController.addVisitorServices);
+router.post(
+  "/:visitorId/services",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_services",
+    ),
+  visitorsController.addVisitorServices,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/industries
  * @desc    Step 3: Add industry selections for visitor
  * @access  Public
  */
-router.post("/:visitorId/industries", visitorsController.addVisitorIndustries);
+router.post(
+  "/:visitorId/industries",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_industries",
+    ),
+  visitorsController.addVisitorIndustries,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/technologies
@@ -32,6 +75,17 @@ router.post("/:visitorId/industries", visitorsController.addVisitorIndustries);
  */
 router.post(
   "/:visitorId/technologies",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_technologies",
+    ),
   visitorsController.addVisitorTechnologies,
 );
 
@@ -40,21 +94,63 @@ router.post(
  * @desc    Step 5: Add feature selections for visitor
  * @access  Public
  */
-router.post("/:visitorId/features", visitorsController.addVisitorFeatures);
+router.post(
+  "/:visitorId/features",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_features",
+    ),
+  visitorsController.addVisitorFeatures,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/discount
  * @desc    Step 6: Add discount selection for visitor
  * @access  Public
  */
-router.post("/:visitorId/discount", visitorsController.addVisitorDiscount);
+router.post(
+  "/:visitorId/discount",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_discount",
+    ),
+  visitorsController.addVisitorDiscount,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/timeline
  * @desc    Step 7: Add timeline selection for visitor (Auto-calculates estimate)
  * @access  Public
  */
-router.post("/:visitorId/timeline", visitorsController.addVisitorTimeline);
+router.post(
+  "/:visitorId/timeline",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many requests. Please try again in a few minutes.",
+      20,
+      600,
+      "visitor_timeline",
+    ),
+  visitorsController.addVisitorTimeline,
+);
 
 /**
  * @route   POST /api/visitors/:visitorId/estimate
@@ -70,6 +166,17 @@ router.post("/:visitorId/timeline", visitorsController.addVisitorTimeline);
  */
 router.post(
   "/:visitorId/service-agreement",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many service agreement requests. Please try again in 1 hour.",
+      5,
+      3600,
+      "visitor_service_agreement",
+    ),
   visitorsController.addVisitorServiceAgreement,
 );
 
@@ -78,7 +185,21 @@ router.post(
  * @desc    Check if visitor email exists / is a client
  * @access  Public
  */
-router.post("/check-email", visitorsController.checkVisitorEmail);
+router.post(
+  "/check-email",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many email check requests. Please try again in a few minutes.",
+      10,
+      300,
+      "visitor_check_email",
+    ),
+  visitorsController.checkVisitorEmail,
+);
 
 /**
  * @route   GET /api/visitors/:id
@@ -110,7 +231,21 @@ router.get("/:id/estimate", visitorsController.getVisitorEstimate);
  * @desc    Accept visitor estimate
  * @access  Public
  */
-router.post("/:id/estimate/accept", visitorsController.acceptVisitorEstimate);
+router.post(
+  "/:id/estimate/accept",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many estimate acceptance requests. Please try again in 1 hour.",
+      5,
+      3600,
+      "visitor_accept_estimate",
+    ),
+  visitorsController.acceptVisitorEstimate,
+);
 
 /**
  * @route   PATCH /api/visitors/:id/estimate
@@ -128,7 +263,21 @@ router.patch(
  * @desc    Request formal quote (PDF download)
  * @access  Public
  */
-router.get("/:id/quote", visitorsController.requestFormalQuote);
+router.get(
+  "/:id/quote",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many quote requests. Please try again in 1 hour.",
+      10,
+      3600,
+      "visitor_request_quote",
+    ),
+  visitorsController.requestFormalQuote,
+);
 
 /**
  * @route   POST /api/visitors/:id/convert-to-project

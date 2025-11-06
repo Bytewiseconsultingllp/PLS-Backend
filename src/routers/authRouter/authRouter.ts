@@ -48,7 +48,6 @@ authRouter.get("/rate-limiter-diagnostic", (req, res) => {
 authRouter
   .route("/register")
   .post(
-    validateDataMiddleware(userRegistrationSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -60,13 +59,13 @@ authRouter
         900,
         "auth_register",
       ),
+    validateDataMiddleware(userRegistrationSchema),
     authController.registerUser,
   );
 
 authRouter
   .route("/verifyEmail")
   .post(
-    validateDataMiddleware(verifyUserSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -78,13 +77,13 @@ authRouter
         600,
         "auth_verify",
       ),
+    validateDataMiddleware(verifyUserSchema),
     authController.verifyUser,
   );
 
 authRouter
   .route("/sendOTP")
   .post(
-    validateDataMiddleware(sendOTPSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -96,13 +95,13 @@ authRouter
         600,
         "auth_otp",
       ),
+    validateDataMiddleware(sendOTPSchema),
     authController.sendOTP,
   );
 
 authRouter
   .route("/login")
   .post(
-    validateDataMiddleware(userLoginSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -114,6 +113,7 @@ authRouter
         300,
         "auth_login",
       ),
+    validateDataMiddleware(userLoginSchema),
     authController.loginUser,
   );
 
@@ -128,7 +128,6 @@ authRouter
   .route("/updateInfo")
   .patch(
     authMiddleware.checkToken,
-    validateDataMiddleware(userUpdateSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -140,13 +139,13 @@ authRouter
         600,
         "update_info",
       ),
+    validateDataMiddleware(userUpdateSchema),
     userController.updateInfo,
   );
 authRouter
   .route("/updateEmail")
   .patch(
     authMiddleware.checkToken,
-    validateDataMiddleware(userUpdateEmailSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -158,6 +157,7 @@ authRouter
         1800,
         "update_email",
       ),
+    validateDataMiddleware(userUpdateEmailSchema),
     userController.updateEmail,
   );
 
@@ -165,7 +165,6 @@ authRouter
   .route("/updatePassword")
   .patch(
     authMiddleware.checkToken,
-    validateDataMiddleware(userUpdatePasswordSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -177,6 +176,7 @@ authRouter
         1800,
         "update_password",
       ),
+    validateDataMiddleware(userUpdatePasswordSchema),
     userController.updatePassword,
   );
 authRouter.route("/updateRole").patch(
@@ -243,7 +243,6 @@ authRouter
 authRouter
   .route("/forgotPasswordRequestFromUser")
   .post(
-    validateDataMiddleware(forgotPasswordRequestFromUserSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -255,12 +254,12 @@ authRouter
         900,
         "forgot_password",
       ),
+    validateDataMiddleware(forgotPasswordRequestFromUserSchema),
     userController.forgotPasswordRequestFromUser,
   );
 authRouter
   .route("/verifyForgotPasswordRequest")
   .post(
-    validateDataMiddleware(verifyForgotPasswordRequestSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -272,12 +271,12 @@ authRouter
         600,
         "verify_forgot_pwd",
       ),
+    validateDataMiddleware(verifyForgotPasswordRequestSchema),
     userController.verifyForgotPasswordRequest,
   );
 authRouter
   .route("/updateNewPasswordRequest")
   .patch(
-    validateDataMiddleware(updateForgotPasswordSchema),
     (req, res, next) =>
       rateLimiterMiddleware.handle(
         req,
@@ -289,6 +288,7 @@ authRouter
         900,
         "update_new_pwd",
       ),
+    validateDataMiddleware(updateForgotPasswordSchema),
     userController.updateNewPasswordRequest,
   );
 authRouter
