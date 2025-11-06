@@ -18,7 +18,31 @@ import {
 import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
 import userController from "../../controllers/authController/userController";
 import authMiddleware from "../../middlewares/authMiddleware";
+import {
+  ENV,
+  ENABLE_RATE_LIMIT_IN_DEV,
+  RATE_LIMIT_WHITELIST_IPS,
+} from "../../config/config";
 export const authRouter = Router();
+
+// 🔍 DIAGNOSTIC ENDPOINT - Remove after debugging
+authRouter.get("/rate-limiter-diagnostic", (req, res) => {
+  const clientIP = req.ip || req.socket.remoteAddress || "unknown";
+  res.json({
+    success: true,
+    diagnostic: {
+      environment: ENV,
+      enableRateLimitInDev: ENABLE_RATE_LIMIT_IN_DEV,
+      detectedIP: clientIP,
+      whitelistedIPs: RATE_LIMIT_WHITELIST_IPS,
+      trustProxy: req.app.get("trust proxy"),
+      headers: {
+        xForwardedFor: req.headers["x-forwarded-for"],
+        xRealIp: req.headers["x-real-ip"],
+      },
+    },
+  });
+});
 
 // Routes**
 authRouter
