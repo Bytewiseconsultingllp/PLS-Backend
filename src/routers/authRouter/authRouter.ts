@@ -15,42 +15,81 @@ import {
   verifyForgotPasswordRequestSchema,
   verifyUserSchema,
 } from "../../validation/zod";
-// import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
+import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
 import userController from "../../controllers/authController/userController";
 import authMiddleware from "../../middlewares/authMiddleware";
 export const authRouter = Router();
 
 // Routes**
-authRouter.route("/register").post(
-  validateDataMiddleware(userRegistrationSchema),
-  // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 5),
-  authController.registerUser,
-);
+authRouter
+  .route("/register")
+  .post(
+    validateDataMiddleware(userRegistrationSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many registration attempts. Please try again in 15 minutes.",
+        3,
+        900,
+        "auth_register",
+      ),
+    authController.registerUser,
+  );
 
 authRouter
   .route("/verifyEmail")
-  // 2 req per minute from single  ip adress
   .post(
     validateDataMiddleware(verifyUserSchema),
-    //  (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 5),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many verification attempts. Please try again in 10 minutes.",
+        5,
+        600,
+        "auth_verify",
+      ),
     authController.verifyUser,
   );
 
 authRouter
   .route("/sendOTP")
-  // 1 req per minute from single  ip adress
   .post(
     validateDataMiddleware(sendOTPSchema),
-    // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 10, OTPALREADYSENT),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many OTP requests. Please try again in 10 minutes.",
+        3,
+        600,
+        "auth_otp",
+      ),
     authController.sendOTP,
   );
 
 authRouter
   .route("/login")
-  // 5 req per mnute from single  ip adress
   .post(
     validateDataMiddleware(userLoginSchema),
-    // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 5, undefined, 20, 180),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many login attempts. Please try again in 5 minutes.",
+        5,
+        300,
+        "auth_login",
+      ),
     authController.loginUser,
   );
 
@@ -61,33 +100,75 @@ authRouter
   .route("/logoutUserForceFully")
   .post(authMiddleware.checkToken, authController.logOutUserForecfully);
 
-authRouter.route("/updateInfo").patch(
-  authMiddleware.checkToken,
-  validateDataMiddleware(userUpdateSchema),
-  // 1 req per minute from single  ip adress
-  // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 10),
-  userController.updateInfo,
-);
-authRouter.route("/updateEmail").patch(
-  authMiddleware.checkToken,
-  validateDataMiddleware(userUpdateEmailSchema),
-  // 1 req per minute from single  ip adress
-  // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 10),
-  userController.updateEmail,
-);
+authRouter
+  .route("/updateInfo")
+  .patch(
+    authMiddleware.checkToken,
+    validateDataMiddleware(userUpdateSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many update requests. Please try again later.",
+        10,
+        600,
+        "update_info",
+      ),
+    userController.updateInfo,
+  );
+authRouter
+  .route("/updateEmail")
+  .patch(
+    authMiddleware.checkToken,
+    validateDataMiddleware(userUpdateEmailSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many email update attempts. Please try again in 30 minutes.",
+        3,
+        1800,
+        "update_email",
+      ),
+    userController.updateEmail,
+  );
 
-authRouter.route("/updatePassword").patch(
-  authMiddleware.checkToken,
-  validateDataMiddleware(userUpdatePasswordSchema),
-  // 1 req per minute from single  ip adress
-  // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 10),
-  userController.updatePassword,
-);
+authRouter
+  .route("/updatePassword")
+  .patch(
+    authMiddleware.checkToken,
+    validateDataMiddleware(userUpdatePasswordSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many password update attempts. Please try again in 30 minutes.",
+        5,
+        1800,
+        "update_password",
+      ),
+    userController.updatePassword,
+  );
 authRouter.route("/updateRole").patch(
   authMiddleware.checkToken,
   // authMiddleware.checkIfUserIsAdmin,
-  // 2 req per minute from single  ip adress
-  // (req, res, next) => rateLimiterMiddleware.handle(req, res, next, 2),
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many role update attempts. Please try again later.",
+      5,
+      600,
+      "update_role",
+    ),
   userController.updateRole,
 );
 authRouter
@@ -139,21 +220,69 @@ authRouter
   .route("/forgotPasswordRequestFromUser")
   .post(
     validateDataMiddleware(forgotPasswordRequestFromUserSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many password reset requests. Please try again in 15 minutes.",
+        3,
+        900,
+        "forgot_password",
+      ),
     userController.forgotPasswordRequestFromUser,
   );
 authRouter
   .route("/verifyForgotPasswordRequest")
   .post(
     validateDataMiddleware(verifyForgotPasswordRequestSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many verification attempts. Please try again in 10 minutes.",
+        5,
+        600,
+        "verify_forgot_pwd",
+      ),
     userController.verifyForgotPasswordRequest,
   );
 authRouter
   .route("/updateNewPasswordRequest")
   .patch(
     validateDataMiddleware(updateForgotPasswordSchema),
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many password update attempts. Please try again in 15 minutes.",
+        3,
+        900,
+        "update_new_pwd",
+      ),
     userController.updateNewPasswordRequest,
   );
-authRouter.route("/refreshAcessToken").post(authController.refreshAcessToken);
+authRouter
+  .route("/refreshAcessToken")
+  .post(
+    (req, res, next) =>
+      rateLimiterMiddleware.handle(
+        req,
+        res,
+        next,
+        1,
+        "Too many token refresh attempts. Please try again in 5 minutes.",
+        20,
+        300,
+        "refresh_token",
+      ),
+    authController.refreshAcessToken,
+  );
 authRouter
   .route("/getAllClients")
   .get(

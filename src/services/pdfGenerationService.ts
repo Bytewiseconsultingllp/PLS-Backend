@@ -413,6 +413,14 @@ class PDFGenerationService {
       "AI & Analytics": [],
     };
 
+    // If no technologies provided, return empty array to show all categories
+    if (!technologies || technologies.length === 0) {
+      return Object.keys(techMap).map((key) => ({
+        label: key,
+        value: "Yet to be decided",
+      }));
+    }
+
     for (const tech of technologies) {
       const category = this.formatText(tech.category);
       const techs = tech.technologies.map((t: string) => this.formatText(t));
@@ -430,14 +438,24 @@ class PDFGenerationService {
         category.includes("Infrastructure")
       ) {
         techMap["Cloud & DevOps"]?.push(...techs);
+      } else if (category.includes("Security")) {
+        techMap.Security?.push(...techs);
+      } else if (
+        category.includes("Ai") ||
+        category.includes("Analytics") ||
+        category.includes("Data")
+      ) {
+        techMap["AI & Analytics"]?.push(...techs);
       }
     }
 
+    // Return all categories, showing "Yet to be decided" for empty ones
     const result: { label: string; value: string }[] = [];
     for (const [key, values] of Object.entries(techMap)) {
-      if (values.length > 0) {
-        result.push({ label: key, value: values.join(", ") });
-      }
+      result.push({
+        label: key,
+        value: values.length > 0 ? values.join(", ") : "Yet to be decided",
+      });
     }
 
     return result;
@@ -591,15 +609,27 @@ class PDFGenerationService {
     const serviceCount = services.length;
     const avgPerService = serviceCount > 0 ? baseCost / serviceCount : baseCost;
 
-    for (const service of services) {
-      const childServices = service.childServices || [];
+    // If no services, show placeholder
+    if (!services || services.length === 0) {
       rows.push({
-        module: this.formatText(service.name),
-        description: childServices
-          .map((c: string) => this.formatText(c))
-          .join(", "),
-        amount: avgPerService,
+        module: "Project Scope",
+        description: "Yet to be decided - pending detailed requirements",
+        amount: baseCost,
       });
+    } else {
+      for (const service of services) {
+        const childServices = service.childServices || [];
+        const description =
+          childServices.length > 0
+            ? childServices.map((c: string) => this.formatText(c)).join(", ")
+            : "Yet to be decided";
+
+        rows.push({
+          module: this.formatText(service.name),
+          description: description,
+          amount: avgPerService,
+        });
+      }
     }
 
     // Draw data rows
@@ -687,21 +717,28 @@ class PDFGenerationService {
     }
 
     // Summary rows
+    const hasEstimate = estimate && estimate.baseCost;
     const summaryRows = [
       {
         label: "Subtotal",
-        value: `$${Number(estimate?.baseCost || 0).toLocaleString()}`,
+        value: hasEstimate
+          ? `$${Number(estimate.baseCost).toLocaleString()}`
+          : "Yet to be decided",
         bold: false,
       },
       {
         label: `Discount (${discount?.percent || 0}%)`,
-        value: `-$${Number(estimate?.discountAmount || 0).toLocaleString()}`,
+        value: hasEstimate
+          ? `-$${Number(estimate.discountAmount || 0).toLocaleString()}`
+          : "Yet to be decided",
         bold: false,
         green: true,
       },
       {
         label: "Estimated Total",
-        value: `$${Number(estimate?.calculatedTotal || 0).toLocaleString()}`,
+        value: hasEstimate
+          ? `$${Number(estimate.calculatedTotal).toLocaleString()}`
+          : "Yet to be decided",
         bold: true,
         highlight: true,
       },
@@ -799,29 +836,54 @@ class PDFGenerationService {
     currentY += rowHeight;
 
     // Timeline data
-    const estimatedDays = timeline?.estimatedDays || 90;
-    const phases = [
-      {
-        phase: "Discovery & Planning",
-        duration: `${Math.round(estimatedDays * 0.15)} days`,
-        deliverables: "SOW, architecture, backlog",
-      },
-      {
-        phase: "Design & Prototyping",
-        duration: `${Math.round(estimatedDays * 0.2)} days`,
-        deliverables: "Wireframes, UI kit, clickable prototype",
-      },
-      {
-        phase: "Development & QA",
-        duration: `${Math.round(estimatedDays * 0.5)} days`,
-        deliverables: "Feature-complete build, test reports",
-      },
-      {
-        phase: "Deployment & Handover",
-        duration: `${Math.round(estimatedDays * 0.15)} days`,
-        deliverables: "Production release, docs, training",
-      },
-    ];
+    const estimatedDays = timeline?.estimatedDays;
+    const hasTimeline = estimatedDays && estimatedDays > 0;
+
+    const phases = hasTimeline
+      ? [
+          {
+            phase: "Discovery & Planning",
+            duration: `${Math.round(estimatedDays * 0.15)} days`,
+            deliverables: "SOW, architecture, backlog",
+          },
+          {
+            phase: "Design & Prototyping",
+            duration: `${Math.round(estimatedDays * 0.2)} days`,
+            deliverables: "Wireframes, UI kit, clickable prototype",
+          },
+          {
+            phase: "Development & QA",
+            duration: `${Math.round(estimatedDays * 0.5)} days`,
+            deliverables: "Feature-complete build, test reports",
+          },
+          {
+            phase: "Deployment & Handover",
+            duration: `${Math.round(estimatedDays * 0.15)} days`,
+            deliverables: "Production release, docs, training",
+          },
+        ]
+      : [
+          {
+            phase: "Discovery & Planning",
+            duration: "Yet to be decided",
+            deliverables: "SOW, architecture, backlog",
+          },
+          {
+            phase: "Design & Prototyping",
+            duration: "Yet to be decided",
+            deliverables: "Wireframes, UI kit, clickable prototype",
+          },
+          {
+            phase: "Development & QA",
+            duration: "Yet to be decided",
+            deliverables: "Feature-complete build, test reports",
+          },
+          {
+            phase: "Deployment & Handover",
+            duration: "Yet to be decided",
+            deliverables: "Production release, docs, training",
+          },
+        ];
 
     // Draw rows
     for (let i = 0; i < phases.length; i++) {
