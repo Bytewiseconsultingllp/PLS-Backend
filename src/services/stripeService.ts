@@ -200,6 +200,12 @@ export class StripeService {
       return event;
     } catch (error) {
       console.error("Error verifying webhook signature:", error);
+      console.error("Signature received:", signature);
+      console.error(
+        "Secret prefix:",
+        secret ? secret.substring(0, 30) + "..." : "undefined",
+      );
+      console.error("Payload type:", typeof payload);
       throw new Error("Invalid webhook signature");
     }
   }

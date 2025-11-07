@@ -316,10 +316,24 @@ export class PaymentController {
       const signature = req.headers["stripe-signature"] as string;
       const payload: string | Buffer = req.body as string | Buffer;
 
+      // TEMPORARY DEBUG: Log signature details
+      logger.info("DEBUG: Webhook signature details", {
+        signature: signature,
+        hasSignature: !!signature,
+        payloadType: typeof payload,
+        payloadLength: payload ? payload.length : 0,
+        secretPrefix: STRIPE_WEBHOOK_SECRET
+          ? STRIPE_WEBHOOK_SECRET.substring(0, 35) + "..."
+          : "undefined",
+      });
+
       if (!signature) {
         res.status(400).json({
           success: false,
           message: "Missing stripe-signature header",
+          debug: {
+            allHeaders: req.headers,
+          },
         });
         return;
       }
@@ -350,6 +364,12 @@ export class PaymentController {
         case "checkout.session.expired":
           await handleCheckoutSessionExpired(event);
           break;
+        case "charge.updated":
+        case "charge.succeeded":
+        case "payment_intent.created":
+          // These events are logged but don't require specific handling
+          logger.info(`Received ${event.type} event - no action required`);
+          break;
         default:
           logger.info(`Unhandled event type: ${event.type}`);
       }
@@ -357,10 +377,23 @@ export class PaymentController {
       res.status(200).json({ received: true });
     } catch (error) {
       logger.error("Error handling webhook:", error);
+      // TEMPORARY DEBUG: Return signature details in error response
+      const signature = req.headers["stripe-signature"] as string;
       res.status(400).json({
         success: false,
         message: "Webhook signature verification failed",
         error: error instanceof Error ? error.message : "Unknown error",
+        debug: {
+          signatureReceived: signature,
+          secretPrefix: STRIPE_WEBHOOK_SECRET
+            ? STRIPE_WEBHOOK_SECRET.substring(0, 15) + "..."
+            : "undefined",
+          payloadType: typeof req.body,
+          headers: {
+            "stripe-signature": req.headers["stripe-signature"],
+            "content-type": req.headers["content-type"],
+          },
+        },
       });
     }
   }
