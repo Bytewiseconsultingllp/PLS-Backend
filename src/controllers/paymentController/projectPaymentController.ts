@@ -105,10 +105,21 @@ export class ProjectPaymentController {
       });
     } catch (error) {
       logger.error("Error creating project checkout session:", error);
+      
+      // TEMPORARY DEBUG: Return full error details
+      const errorDetails = error instanceof Error 
+        ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : { error: String(error) };
+      
       res.status(500).json({
         success: false,
         message: "Failed to create checkout session",
         error: error instanceof Error ? error.message : "Unknown error",
+        debug: errorDetails, // Remove this in production after debugging
       });
     }
   }
