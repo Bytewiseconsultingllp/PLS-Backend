@@ -58,6 +58,9 @@ export class StripeService {
       return paymentIntent;
     } catch (error) {
       console.error("Error creating payment intent:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error("Failed to create payment intent");
     }
   }
@@ -95,6 +98,10 @@ export class StripeService {
       return session;
     } catch (error) {
       console.error("Error creating checkout session:", error);
+      // Pass through the actual Stripe error message
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error("Failed to create checkout session");
     }
   }
@@ -111,6 +118,9 @@ export class StripeService {
       return paymentIntent;
     } catch (error) {
       console.error("Error retrieving payment intent:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error("Failed to retrieve payment intent");
     }
   }
@@ -126,6 +136,9 @@ export class StripeService {
       return session;
     } catch (error) {
       console.error("Error retrieving checkout session:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error("Failed to retrieve checkout session");
     }
   }
