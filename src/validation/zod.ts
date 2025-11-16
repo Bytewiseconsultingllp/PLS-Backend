@@ -1933,3 +1933,66 @@ export const clientProjectDraftServiceAgreementSchema = z.object({
     .max(35, { message: "locale can be at most 35 characters long." })
     .optional(),
 });
+
+/*                                                       Freelancer Payout Schemas                                                               */
+
+// ** Update freelancer Stripe account
+export const updateFreelancerStripeAccountSchema = z.object({
+  stripeAccountId: z
+    .string({ message: "stripeAccountId is required!!" })
+    .min(1, { message: "stripeAccountId is required!!" })
+    .startsWith("acct_", {
+      message: "Invalid Stripe account ID format. Must start with 'acct_'",
+    }),
+});
+
+// ** Create Stripe Connect account for freelancer
+export const createStripeConnectAccountSchema = z.object({
+  email: z
+    .string({ message: "email is required!!" })
+    .min(1, { message: "email is required!!" })
+    .email({ message: "Invalid email format" }),
+  country: z
+    .string()
+    .length(2, { message: "Country must be a 2-letter ISO code (e.g., US)" })
+    .optional()
+    .default("US"),
+});
+
+// ** Create payout to freelancer
+export const createPayoutSchema = z.object({
+  amount: z
+    .number({ message: "amount must be a number" })
+    .positive({ message: "amount must be greater than 0" })
+    .max(1000000, { message: "amount cannot exceed $1,000,000" }),
+  currency: z
+    .string()
+    .length(3, { message: "currency must be a 3-letter ISO code (e.g., USD)" })
+    .optional()
+    .default("usd"),
+  payoutType: z.enum(["MILESTONE", "PROJECT", "BONUS", "MANUAL"], {
+    message: "payoutType must be one of: MILESTONE, PROJECT, BONUS, MANUAL",
+  }),
+  description: z
+    .string()
+    .max(500, { message: "description can be at most 500 characters long." })
+    .optional(),
+  notes: z
+    .string()
+    .max(1000, { message: "notes can be at most 1000 characters long." })
+    .optional(),
+  projectId: z.string().uuid({ message: "Invalid project ID" }).optional(),
+  milestoneId: z.string().uuid({ message: "Invalid milestone ID" }).optional(),
+});
+
+// ** Update payout status
+export const updatePayoutStatusSchema = z.object({
+  status: z.enum(["PENDING", "PROCESSING", "PAID", "FAILED", "CANCELLED"], {
+    message:
+      "status must be one of: PENDING, PROCESSING, PAID, FAILED, CANCELLED",
+  }),
+  paidAt: z
+    .string()
+    .datetime({ message: "Invalid datetime format" })
+    .optional(),
+});

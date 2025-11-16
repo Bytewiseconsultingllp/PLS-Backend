@@ -16,6 +16,8 @@ import newVisitorsRouter from "./visitorsRouter/newVisitorsRouter";
 import newProjectRouter from "./projectRouter/newProjectRouter";
 import clientProjectDraftRouter from "./clientProjectDraftRouter";
 import newFreelancerRouter from "./freelancerRouter/newFreelancerRouter";
+import freelancerPaymentRouter from "./freelancerRouter/freelancerPaymentRouter";
+import freelancerStripeConnectRouter from "./freelancerRouter/freelancerStripeConnectRouter";
 import adminModeratorRouter from "./moderatorRouter/adminModeratorRouter";
 import moderatorRouter from "./moderatorRouter/moderatorRouter";
 import paymentAgreementRouter from "./paymentAgreementRouter/paymentAgreementRouter";
@@ -79,8 +81,14 @@ defaultRouter.use(endpoint.PROJECT, newProjectRouter);
 // **   CLIENT PROJECT DRAFT ROUTER (NEW) - step-by-step project creation for existing clients
 defaultRouter.use(`${endpoint.PROJECT}/draft`, clientProjectDraftRouter);
 
+// **   FREELANCER STRIPE CONNECT ROUTER (OAuth flow - MUST be first to handle public callback)
+defaultRouter.use(endpoint.FREELANCER, freelancerStripeConnectRouter);
+
 // **   FREELANCERS ROUTER (NEW)
 defaultRouter.use(endpoint.FREELANCER, newFreelancerRouter);
+
+// **   FREELANCER PAYMENT ROUTER (Freelancer manages their own payment details)
+defaultRouter.use(endpoint.FREELANCER, freelancerPaymentRouter);
 
 // **   MODERATORS ROUTER (NEW)
 defaultRouter.use(endpoint.ADMINMODERATORROUTE, adminModeratorRouter);

@@ -701,6 +701,11 @@ const swaggerDefinition = {
       name: "Admin - Freelancers",
       description: "Admin endpoints for managing all freelancers (Admin only)",
     },
+    {
+      name: "Admin - Payments",
+      description:
+        "Admin endpoints for listing and managing all payments (Admin only)",
+    },
   ],
 };
 

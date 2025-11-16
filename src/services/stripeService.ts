@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import Stripe from "stripe";
-import { STRIPE_SECRET_KEY } from "../config/config";
+import { STRIPE_SECRET_KEY, STRIPE_CONNECT_CLIENT_ID } from "../config/config";
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -240,6 +240,264 @@ export class StripeService {
       console.error("Error listing payment intents:", error);
       throw new Error("Failed to list payment intents");
     }
+  }
+
+  /**
+   * Create a Stripe Connect account link for onboarding
+   * Used to connect freelancers to receive payouts
+   */
+  static async createAccountLink(
+    accountId: string,
+    refreshUrl: string,
+    returnUrl: string,
+  ): Promise<Stripe.AccountLink> {
+    try {
+      const accountLink = await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: "account_onboarding",
+      });
+      return accountLink;
+    } catch (error) {
+      console.error("Error creating account link:", error);
+      throw new Error("Failed to create account link");
+    }
+  }
+
+  /**
+   * Create a Stripe Connect account for a freelancer
+   */
+  static async createConnectAccount(
+    email: string,
+    country: string = "US",
+  ): Promise<Stripe.Account> {
+    try {
+      const account = await stripe.accounts.create({
+        type: "express",
+        email,
+        country,
+        capabilities: {
+          transfers: { requested: true },
+        },
+      });
+      return account;
+    } catch (error) {
+      console.error("Error creating connect account:", error);
+      throw new Error("Failed to create connect account");
+    }
+  }
+
+  /**
+   * Retrieve a Stripe Connect account
+   */
+  static async getConnectAccount(accountId: string): Promise<Stripe.Account> {
+    try {
+      const account = await stripe.accounts.retrieve(accountId);
+      return account;
+    } catch (error) {
+      console.error("Error retrieving connect account:", error);
+      throw new Error("Failed to retrieve connect account");
+    }
+  }
+
+  /**
+   * Create a transfer to a connected account (for payouts to freelancers)
+   */
+  static async createTransfer(
+    amount: number, // Amount in cents
+    currency: string,
+    destination: string, // Stripe Connect account ID
+    description?: string,
+    metadata?: Record<string, string>,
+  ): Promise<Stripe.Transfer> {
+    try {
+      const transferData: Stripe.TransferCreateParams = {
+        amount,
+        currency,
+        destination,
+      };
+
+      if (description) transferData.description = description;
+      if (metadata) transferData.metadata = metadata;
+
+      const transfer = await stripe.transfers.create(transferData);
+      return transfer;
+    } catch (error) {
+      console.error("Error creating transfer:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to create transfer");
+    }
+  }
+
+  /**
+   * Retrieve a transfer
+   */
+  static async getTransfer(transferId: string): Promise<Stripe.Transfer> {
+    try {
+      const transfer = await stripe.transfers.retrieve(transferId);
+      return transfer;
+    } catch (error) {
+      console.error("Error retrieving transfer:", error);
+      throw new Error("Failed to retrieve transfer");
+    }
+  }
+
+  /**
+   * List transfers
+   */
+  static async listTransfers(
+    destination?: string,
+    limit: number = 10,
+  ): Promise<Stripe.Transfer[]> {
+    try {
+      const listParams: Stripe.TransferListParams = { limit };
+      if (destination) listParams.destination = destination;
+
+      const transfers = await stripe.transfers.list(listParams);
+      return transfers.data;
+    } catch (error) {
+      console.error("Error listing transfers:", error);
+      throw new Error("Failed to list transfers");
+    }
+  }
+
+  /**
+   * Cancel a transfer (must be done before funds are paid out)
+   */
+  static async cancelTransfer(transferId: string): Promise<Stripe.Transfer> {
+    try {
+      // Note: Transfers can only be reversed using reverseTransfer
+      // This method retrieves the transfer to check if it can be reversed
+      const transfer = await stripe.transfers.retrieve(transferId);
+      if (transfer.reversed) {
+        throw new Error("Transfer already reversed");
+      }
+      return transfer;
+    } catch (error) {
+      console.error("Error canceling transfer:", error);
+      throw new Error("Failed to cancel transfer");
+    }
+  }
+
+  /**
+   * Reverse a transfer (refund to platform)
+   */
+  static async reverseTransfer(
+    transferId: string,
+    amount?: number,
+    description?: string,
+    metadata?: Record<string, string>,
+  ): Promise<Stripe.TransferReversal> {
+    try {
+      const reversalData: Stripe.TransferReversalCreateParams = {};
+
+      if (amount) reversalData.amount = amount;
+      if (description) reversalData.description = description;
+      if (metadata) reversalData.metadata = metadata;
+
+      const reversal = await stripe.transfers.createReversal(
+        transferId,
+        reversalData,
+      );
+      return reversal;
+    } catch (error) {
+      console.error("Error reversing transfer:", error);
+      throw new Error("Failed to reverse transfer");
+    }
+  }
+
+  /**
+   * Get balance for connected account
+   */
+  static async getAccountBalance(accountId: string): Promise<Stripe.Balance> {
+    try {
+      const balance = await stripe.balance.retrieve({
+        stripeAccount: accountId,
+      });
+      return balance;
+    } catch (error) {
+      console.error("Error retrieving account balance:", error);
+      throw new Error("Failed to retrieve account balance");
+    }
+  }
+
+  // ============================================
+  // STRIPE CONNECT OAUTH METHODS
+  // ============================================
+
+  /**
+   * Exchange authorization code for Stripe Connect account access
+   * This is called after the freelancer authorizes the connection
+   */
+  static async exchangeOAuthCode(code: string): Promise<Stripe.OAuthToken> {
+    try {
+      const response = await stripe.oauth.token({
+        grant_type: "authorization_code",
+        code,
+      });
+      return response;
+    } catch (error) {
+      console.error("Error exchanging OAuth code:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to exchange OAuth code");
+    }
+  }
+
+  /**
+   * Deauthorize a connected account (disconnect)
+   * This revokes the platform's access to the connected account
+   */
+  static async deauthorizeAccount(
+    stripeAccountId: string,
+  ): Promise<Stripe.OAuthDeauthorization> {
+    try {
+      const response = await stripe.oauth.deauthorize({
+        client_id: STRIPE_CONNECT_CLIENT_ID,
+        stripe_user_id: stripeAccountId,
+      });
+      return response;
+    } catch (error) {
+      console.error("Error deauthorizing account:", error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Failed to deauthorize account");
+    }
+  }
+
+  /**
+   * Generate OAuth authorization URL for Stripe Connect
+   * Freelancer will be redirected to this URL to authorize the connection
+   */
+  static generateOAuthUrl(params: {
+    clientId: string;
+    redirectUri: string;
+    state: string;
+    userEmail?: string;
+    userCountry?: string;
+  }): string {
+    const queryParams = new URLSearchParams({
+      response_type: "code",
+      client_id: params.clientId,
+      state: params.state,
+      scope: "read_write",
+      redirect_uri: params.redirectUri,
+    });
+
+    // Add optional user prefill data
+    if (params.userEmail) {
+      queryParams.append("stripe_user[email]", params.userEmail);
+    }
+    if (params.userCountry) {
+      queryParams.append("stripe_user[country]", params.userCountry);
+    }
+
+    return `https://connect.stripe.com/oauth/authorize?${queryParams.toString()}`;
   }
 }
 

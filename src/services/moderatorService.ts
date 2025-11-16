@@ -198,8 +198,18 @@ export const getModeratorById = async (moderatorId: string) => {
               id: true,
               details: {
                 select: {
-                  fullName: true,
-                  email: true,
+                  // ❌ Hide identity - moderators don't need to know who
+                  // fullName: false,
+                  // email: false,
+                  // professionalLinks: false,
+                  // ✅ Show capabilities - moderators need technical info
+                  primaryDomain: true,
+                  timeZone: true,
+                  eliteSkillCards: true,
+                  tools: true,
+                  otherNote: true,
+                  selectedIndustries: true,
+                  country: true,
                 },
               },
             },
@@ -544,9 +554,18 @@ export const getModeratorProjects = async (
             id: true,
             details: {
               select: {
-                fullName: true,
-                email: true,
+                // ❌ Hide identity - moderators don't need to know who
+                // fullName: false,
+                // email: false,
+                // professionalLinks: false,
+                // ✅ Show capabilities - moderators need technical info
                 primaryDomain: true,
+                timeZone: true,
+                eliteSkillCards: true,
+                tools: true,
+                otherNote: true,
+                selectedIndustries: true,
+                country: true,
               },
             },
           },
@@ -609,8 +628,24 @@ export const getModeratorProjectById = async (
       },
       selectedFreelancers: {
         where: { deletedAt: null },
-        include: {
-          details: true,
+        select: {
+          id: true,
+          details: {
+            select: {
+              // ❌ Hide identity - moderators don't need to know who
+              // fullName: false,
+              // email: false,
+              // professionalLinks: false,
+              // ✅ Show capabilities - moderators need technical info
+              primaryDomain: true,
+              timeZone: true,
+              eliteSkillCards: true,
+              tools: true,
+              otherNote: true,
+              selectedIndustries: true,
+              country: true,
+            },
+          },
         },
       },
       client: {

@@ -411,19 +411,22 @@ export const createBid = async (
       throw new Error("This project is not currently accepting new bids.");
     }
 
-    // Check if bid already exists
-    const existingBid = await prisma.freelancerBid.findUnique({
+    // Check if an ACTIVE bid already exists
+    // Allow re-bidding if previous bid was WITHDRAWN or REJECTED
+    const existingBid = await prisma.freelancerBid.findFirst({
       where: {
-        // eslint-disable-next-line camelcase
-        freelancerId_projectId: {
-          freelancerId,
-          projectId: bidData.projectId,
+        freelancerId,
+        projectId: bidData.projectId,
+        status: {
+          in: [BidStatus.PENDING, BidStatus.ACCEPTED], // Only check for active bids
         },
       },
     });
 
     if (existingBid) {
-      throw new Error("You have already submitted a bid for this project");
+      throw new Error(
+        "You have already submitted an active bid for this project",
+      );
     }
 
     // Create the bid
@@ -488,27 +491,13 @@ export const getFreelancerBids = async (
             updatedAt: true,
             paymentStatus: true,
             acceptingBids: true,
-            discordChatUrl: true,
-            // Include project details but exclude client personal info
-            details: {
-              select: {
-                // ❌ Exclude client personal info
-                // fullName: false,
-                // businessEmail: false,
-                // phoneNumber: false,
-                // ✅ Include business/company info
-                companyName: true,
-                companyWebsite: true,
-                businessAddress: true,
-                businessType: true,
-                referralSource: true,
-              },
-            },
+            // ❌ Hide discordChatUrl from freelancers
+            // ❌ Hide details (company info) from freelancers
+            // ❌ Hide timeline from freelancers
             services: true,
             industries: true,
             technologies: true,
             features: true,
-            timeline: true,
             // Exclude pricing/estimate
             // Exclude client relation
           },
@@ -627,27 +616,13 @@ export const getBidById = async (bidId: string) => {
           updatedAt: true,
           paymentStatus: true,
           acceptingBids: true,
-          discordChatUrl: true,
-          // Include project details but exclude client personal info
-          details: {
-            select: {
-              // ❌ Exclude client personal info
-              // fullName: false,
-              // businessEmail: false,
-              // phoneNumber: false,
-              // ✅ Include business/company info
-              companyName: true,
-              companyWebsite: true,
-              businessAddress: true,
-              businessType: true,
-              referralSource: true,
-            },
-          },
+          // ❌ Hide discordChatUrl from freelancers
+          // ❌ Hide details (company info) from freelancers
+          // ❌ Hide timeline from freelancers
           services: true,
           industries: true,
           technologies: true,
           features: true,
-          timeline: true,
           // Exclude pricing/estimate
           // Exclude client relation
         },
@@ -831,24 +806,13 @@ export const getAvailableProjects = async (
         updatedAt: true,
         paymentStatus: true,
         acceptingBids: true,
-        discordChatUrl: true,
-        // Include project details but exclude client personal info
-        details: {
-          select: {
-            // ❌ Exclude client personal info (fullName, businessEmail, phoneNumber)
-            // ✅ Include business/company info only
-            companyName: true,
-            companyWebsite: true,
-            businessAddress: true,
-            businessType: true,
-            referralSource: true,
-          },
-        },
+        // ❌ Hide discordChatUrl from freelancers
+        // ❌ Hide details (company info) from freelancers
+        // ❌ Hide timeline from freelancers
         services: true,
         industries: true,
         technologies: true,
         features: true,
-        timeline: true,
         // Explicitly exclude estimate to hide pricing from freelancers
         // Explicitly exclude client relation to hide client personal info
         selectedFreelancers: {
@@ -939,24 +903,13 @@ export const getProjectForBidding = async (
       updatedAt: true,
       paymentStatus: true,
       acceptingBids: true,
-      discordChatUrl: true,
-      // Include project details but exclude client personal info
-      details: {
-        select: {
-          // ❌ Exclude client personal info (fullName, businessEmail, phoneNumber)
-          // ✅ Include business/company info only
-          companyName: true,
-          companyWebsite: true,
-          businessAddress: true,
-          businessType: true,
-          referralSource: true,
-        },
-      },
+      // ❌ Hide discordChatUrl from freelancers
+      // ❌ Hide details (company info) from freelancers
+      // ❌ Hide timeline from freelancers
       services: true,
       industries: true,
       technologies: true,
       features: true,
-      timeline: true,
       selectedFreelancers: {
         select: {
           id: true,
@@ -1027,22 +980,13 @@ export const getMySelectedProjects = async (
         updatedAt: true,
         paymentStatus: true,
         acceptingBids: true,
-        discordChatUrl: true,
-        // Include project details but exclude client personal info
-        details: {
-          select: {
-            companyName: true,
-            companyWebsite: true,
-            businessAddress: true,
-            businessType: true,
-            referralSource: true,
-          },
-        },
+        // ❌ Hide discordChatUrl from freelancers
+        // ❌ Hide details (company info) from freelancers
+        // ❌ Hide timeline from freelancers
         services: true,
         industries: true,
         technologies: true,
         features: true,
-        timeline: true,
         selectedFreelancers: {
           select: {
             id: true,
@@ -1123,21 +1067,13 @@ export const getMySelectedProjectDetails = async (
       updatedAt: true,
       paymentStatus: true,
       acceptingBids: true,
-      discordChatUrl: true,
-      details: {
-        select: {
-          companyName: true,
-          companyWebsite: true,
-          businessAddress: true,
-          businessType: true,
-          referralSource: true,
-        },
-      },
+      // ❌ Hide discordChatUrl from freelancers
+      // ❌ Hide details (company info) from freelancers
+      // ❌ Hide timeline from freelancers
       services: true,
       industries: true,
       technologies: true,
       features: true,
-      timeline: true,
       selectedFreelancers: {
         select: {
           id: true,
@@ -1411,7 +1347,6 @@ export const getFreelancerByUserId = async (userId: string) => {
     include: {
       details: true,
       availabilityWorkflow: true,
-      domainExperiences: true,
       softSkills: true,
       certifications: true,
       projectBidding: true,

@@ -15,6 +15,8 @@ interface CreateProjectCheckoutRequest {
   successUrl: string;
   cancelUrl: string;
   currency?: string;
+  depositPercentage?: number; // Optional: percentage of total (e.g., 25 for 25%)
+  customAmount?: number; // Optional: custom amount in dollars
 }
 
 export class ProjectPaymentController {
@@ -27,8 +29,14 @@ export class ProjectPaymentController {
     res: Response,
   ): Promise<void> {
     try {
-      const { projectId, successUrl, cancelUrl, currency } =
-        req.body as CreateProjectCheckoutRequest;
+      const {
+        projectId,
+        successUrl,
+        cancelUrl,
+        currency,
+        depositPercentage,
+        customAmount,
+      } = req.body as CreateProjectCheckoutRequest;
       const userId = req.userFromToken?.uid;
 
       if (!projectId) {
@@ -70,14 +78,9 @@ export class ProjectPaymentController {
         return;
       }
 
-      // Check if project is already paid
-      if (project.paymentStatus === "SUCCEEDED") {
-        res.status(400).json({
-          success: false,
-          message: "Project payment is already completed",
-        });
-        return;
-      }
+      // Note: We allow multiple payments (installments) even if paymentStatus is SUCCEEDED
+      // SUCCEEDED now means "at least 25% paid", not "fully paid"
+      // Clients can make additional payments to reach 100% or beyond
 
       // Create checkout session
       const checkoutSession =
@@ -86,6 +89,8 @@ export class ProjectPaymentController {
           successUrl,
           cancelUrl,
           currency: currency || "usd",
+          depositPercentage,
+          customAmount,
         });
 
       logger.info(`Checkout session created for project: ${projectId}`, {
@@ -105,16 +110,17 @@ export class ProjectPaymentController {
       });
     } catch (error) {
       logger.error("Error creating project checkout session:", error);
-      
+
       // TEMPORARY DEBUG: Return full error details
-      const errorDetails = error instanceof Error 
-        ? {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          }
-        : { error: String(error) };
-      
+      const errorDetails =
+        error instanceof Error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            }
+          : { error: String(error) };
+
       res.status(500).json({
         success: false,
         message: "Failed to create checkout session",

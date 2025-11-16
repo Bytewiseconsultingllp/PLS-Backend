@@ -37,7 +37,7 @@ jobs:
             bun install
             bun run db:migrate
             bun run build
-            
+
             echo "Restarting PM2 service..."
             pm2 restart pls-backend-upgraded
 
