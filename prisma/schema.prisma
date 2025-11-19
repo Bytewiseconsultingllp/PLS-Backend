@@ -69,6 +69,8 @@ model User {
   freelancer        Freelancer? // Freelancer profile (if user is a freelancer)
   moderatedProjects Project[]            @relation("ProjectModerator") // Projects moderated by this user
   projectDrafts     ClientProjectDraft[] @relation("ClientProjectDrafts") // Project drafts created by this client
+  refundsProcessed  Refund[] // Refunds processed by this admin
+  payoutsInitiated  FreelancerPayout[] // Payouts initiated by this admin to freelancers
 
   @@index([trashedAt])
   @@index([trashedBy])
@@ -202,7 +204,7 @@ model BlogPost {
   blogSlug      String   @unique
   blogThumbnail String
   blogOverview  String
-  blogBody      String
+  blogBody      String   @db.Text
   isPublished   Boolean  @default(true)
   createdAt     DateTime @default(now())
 
@@ -210,7 +212,6 @@ model BlogPost {
   @@index([blogTitle])
   @@index([blogSlug])
   @@index([createdAt])
-  @@index([blogBody])
   @@map("blogposts")
 }
 
@@ -220,6 +221,19 @@ enum PaymentStatus {
   FAILED
   CANCELED
   REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentType {
+  FULL
+  DEPOSIT
+  INSTALLMENT
 }
 
 enum PaymentMethod {
@@ -250,6 +264,15 @@ model Payment {
   status        PaymentStatus @default(PENDING)
   paymentMethod PaymentMethod @default(CARD)
 
+  // Payment type and breakdown (for partial/deposit payments)
+  paymentType         PaymentType @default(FULL)
+  depositPercentage   Decimal?    @db.Decimal(5, 2) // e.g., 25.00 for 25%
+  fullProjectAmount   Decimal?    @db.Decimal(10, 2) // Full project amount in dollars for reference
+
+  // Refund tracking
+  totalRefundedAmount Decimal?    @default(0) @db.Decimal(10, 2) // Sum of all refunds for this payment
+  lastRefundedAt      DateTime? // Last refund timestamp
+
   // Client information
   clientEmail String
   clientName  String?
@@ -258,6 +281,12 @@ model Payment {
   // Payment metadata
   description String?
   metadata    Json?
+
+  // Idempotency and webhook tracking (for reliability)
+  lastWebhookEventId     String?   // Last Stripe event ID processed
+  webhookEventsProcessed String[]  @default([]) // All event IDs processed
+  lastCheckedAt          DateTime? // Last time we verified with Stripe
+  webhookRetryCount      Int       @default(0) // Number of webhook retries
 
   // Timestamps
   createdAt  DateTime  @default(now())
@@ -269,6 +298,10 @@ model Payment {
   trashedBy String?
   trashedAt DateTime?
 
+  // Relations
+  verificationLogs PaymentVerificationLog[]
+  refunds          Refund[]
+
   @@index([userId])
   @@index([projectId])
   @@index([visitorId])
@@ -279,6 +312,141 @@ model Payment {
   @@index([createdAt])
   @@index([trashedAt])
   @@index([trashedBy])
+  @@index([lastCheckedAt])
+}
+
+// Payment Verification Log - Tracks all payment status verifications
+model PaymentVerificationLog {
+  id String @id @default(uuid())
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  verifiedBy   String // "webhook" | "api_check" | "cron" | "manual"
+  stripeStatus String // What Stripe says (e.g., "paid", "succeeded")
+  ourStatus    String // What our DB says (e.g., "SUCCEEDED", "PENDING")
+  matched      Boolean // Do they match?
+  eventId      String? // Stripe event ID if from webhook
+
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([verifiedBy])
+  @@index([createdAt])
+  @@index([matched])
+}
+
+// Refund Model - Tracks all refunds processed for payments
+model Refund {
+  id String @id @default(uuid())
+
+  // Relations
+  paymentId  String
+  payment    Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  refundedBy String // Admin UID who processed the refund
+  admin      User    @relation(fields: [refundedBy], references: [uid])
+
+  // Refund details
+  amount Decimal       @db.Decimal(10, 2) // Refund amount in dollars
+  reason String?       @db.Text // Optional reason for refund
+  status RefundStatus  @default(PENDING)
+
+  // Stripe tracking
+  stripeRefundId String? @unique
+
+  // Additional info
+  notes String? @db.Text // Admin notes
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  processedAt DateTime? // When refund completed in Stripe
+
+  @@index([paymentId])
+  @@index([projectId])
+  @@index([refundedBy])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// FREELANCER PAYOUT MODELS
+// ============================================
+
+enum StripeAccountStatus {
+  NOT_CONNECTED    // No Stripe account connected
+  PENDING          // Stripe Connect account created but not fully onboarded
+  ACTIVE           // Fully verified and can receive payouts
+  RESTRICTED       // Account restricted by Stripe
+  DISABLED         // Account disabled
+}
+
+enum PayoutStatus {
+  PENDING          // Payout initiated but not processed
+  PROCESSING       // Being processed by Stripe
+  PAID             // Successfully paid to freelancer
+  FAILED           // Payout failed
+  CANCELLED        // Payout cancelled by admin
+}
+
+enum PayoutType {
+  MILESTONE        // Payment for completing a milestone
+  PROJECT          // Payment for completing entire project
+  BONUS            // Bonus payment
+  MANUAL           // Manual payment by admin
+}
+
+model FreelancerPayout {
+  id String @id @default(uuid())
+
+  // Relations
+  freelancerId String
+  freelancer   Freelancer @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  
+  milestoneId String?
+  milestone   Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  
+  initiatedBy String // Admin UID who initiated the payout
+  admin       User   @relation(fields: [initiatedBy], references: [uid])
+
+  // Payout details
+  amount      Decimal     @db.Decimal(10, 2) // Amount in dollars
+  currency    String      @default("usd")
+  status      PayoutStatus @default(PENDING)
+  payoutType  PayoutType  @default(MANUAL)
+  
+  // Stripe tracking
+  stripeTransferId String? @unique // Stripe transfer ID
+  stripePayoutId   String? @unique // Stripe payout ID
+  
+  // Additional info
+  description String? @db.Text
+  notes       String? @db.Text // Admin notes
+  
+  // Failure tracking
+  failureReason String? @db.Text
+  failureCode   String?
+  retryCount    Int     @default(0)
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime? // When payout completed in Stripe
+  paidAt      DateTime? // When funds arrived in freelancer's account
+  
+  @@index([freelancerId])
+  @@index([projectId])
+  @@index([milestoneId])
+  @@index([initiatedBy])
+  @@index([status])
+  @@index([payoutType])
+  @@index([createdAt])
+  @@index([stripeTransferId])
+  @@index([stripePayoutId])
 }
 
 // ============================================
@@ -716,6 +884,8 @@ model Project {
   milestones        Milestone[]
   payments          Payment[]
   paymentAgreements MilestonePaymentAgreement[] // Payment agreements for milestones
+  refunds           Refund[] // Refunds for this project
+  freelancerPayouts FreelancerPayout[] // Payouts to freelancers for this project
 
   // Freelancer relations
   bids                FreelancerBid[] // All bids from freelancers
@@ -724,7 +894,12 @@ model Project {
   discordChatUrl String? @db.VarChar(2048)
 
   // Payment tracking
-  paymentStatus PaymentStatus @default(PENDING)
+  paymentStatus               PaymentStatus @default(PENDING)
+  totalAmountPaid             Decimal?      @default(0) @db.Decimal(10, 2) // Cumulative sum of all successful payments (in dollars)
+  paymentCompletionPercentage Decimal?      @default(0) @db.Decimal(5, 2)  // 0.00 to 100.00+ (percentage of project paid)
+  
+  // Refund tracking
+  totalRefunded               Decimal?      @default(0) @db.Decimal(10, 2) // Sum of all refunds (in dollars)
 
   // Bid Management - Control whether project is accepting new bids
   acceptingBids Boolean @default(true)
@@ -986,6 +1161,9 @@ model Milestone {
   // Payment Agreement relation (one-to-one)
   paymentAgreement MilestonePaymentAgreement?
 
+  // Payout tracking for freelancers
+  freelancerPayouts FreelancerPayout[]
+
   // Legacy fields (kept for backward compatibility)
   assigneeName  String?
   assigneeEmail String?
@@ -1115,6 +1293,14 @@ model Freelancer {
   // Milestones assigned to this freelancer (NEW)
   assignedMilestones Milestone[]
 
+  // Payment & Payout Information
+  stripeAccountId String? @unique // Stripe Connect account ID for payouts
+  stripeAccountStatus StripeAccountStatus @default(NOT_CONNECTED) // Status of Stripe Connect account
+  paymentDetailsVerified Boolean @default(false) // Whether payment details have been verified
+
+  // Payout tracking
+  payouts FreelancerPayout[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -1124,6 +1310,8 @@ model Freelancer {
   @@index([reviewedBy])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([stripeAccountId])
+  @@index([stripeAccountStatus])
 }
 
 model FreelancerBid {
@@ -1147,9 +1335,11 @@ model FreelancerBid {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@unique([freelancerId, projectId]) // One bid per freelancer per project
+  // Removed unique constraint to allow re-bidding after withdrawal/rejection
+  // Business logic in createBid() prevents duplicate ACTIVE bids
   @@index([freelancerId])
   @@index([projectId])
+  @@index([freelancerId, projectId]) // Index for querying bids by freelancer+project
   @@index([status])
   @@index([submittedAt])
   @@index([deletedAt])

@@ -17,6 +17,9 @@ const config = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY as string,
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY as string,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET as string,
+  STRIPE_CONNECT_CLIENT_ID: process.env.STRIPE_CONNECT_CLIENT_ID as string,
+  FRONTEND_URL: process.env.FRONTEND_URL as string,
+  BACKEND_URL: process.env.BACKEND_URL as string,
   // Rate limiter whitelist IPs (optional, comma-separated)
   RATE_LIMIT_WHITELIST_IPS: process.env.RATE_LIMIT_WHITELIST_IPS
     ? process.env.RATE_LIMIT_WHITELIST_IPS.split(",").map((ip) => ip.trim())
@@ -38,6 +41,9 @@ export const {
   STRIPE_SECRET_KEY,
   STRIPE_PUBLISHABLE_KEY,
   STRIPE_WEBHOOK_SECRET,
+  STRIPE_CONNECT_CLIENT_ID,
+  FRONTEND_URL,
+  BACKEND_URL,
   RATE_LIMIT_WHITELIST_IPS,
   ENABLE_RATE_LIMIT_IN_DEV,
 } = config;

@@ -39,6 +39,11 @@ paymentRouter.get(
   (req, res) => PaymentController.getCheckoutSessionStatus(req, res),
 );
 
+// ** Verify Session Route (Client-side fallback for missed webhooks) **
+paymentRouter.post("/verify-session", authMiddleware.checkToken, (req, res) =>
+  PaymentController.verifyCheckoutSession(req, res),
+);
+
 // ** Webhook Route (No authentication required for webhooks) **
 paymentRouter.post("/webhook", (req, res) =>
   PaymentController.handleWebhook(req, res),

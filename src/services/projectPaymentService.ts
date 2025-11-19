@@ -8,6 +8,8 @@ interface CreateProjectCheckoutSessionData {
   successUrl: string;
   cancelUrl: string;
   currency?: string;
+  depositPercentage?: number; // e.g., 25 for 25%
+  customAmount?: number; // Custom amount in dollars
 }
 
 interface ProjectCheckoutSessionResponse {
@@ -19,12 +21,19 @@ interface ProjectCheckoutSessionResponse {
 export class ProjectPaymentService {
   /**
    * Create a checkout session for a project payment
-   * Gets the amount from ProjectEstimate.calculatedTotal
+   * Supports full payment, deposit (percentage), or custom amount
    */
   static async createProjectCheckoutSession(
     data: CreateProjectCheckoutSessionData,
   ): Promise<ProjectCheckoutSessionResponse> {
-    const { projectId, successUrl, cancelUrl, currency = "usd" } = data;
+    const {
+      projectId,
+      successUrl,
+      cancelUrl,
+      currency = "usd",
+      depositPercentage,
+      customAmount,
+    } = data;
 
     try {
       // Fetch project with estimate and details
@@ -69,8 +78,49 @@ export class ProjectPaymentService {
         calculatedTotal = new Decimal(recalculatedAmount);
       }
 
-      // Get amount in dollars and convert to cents for Stripe
-      const amountInDollars = Number(calculatedTotal);
+      // Check if this is the first payment
+      const currentTotalPaid = Number(project.totalAmountPaid || 0);
+      const isFirstPayment = currentTotalPaid === 0;
+
+      // Calculate payment amount based on type
+      const fullProjectAmountInDollars = Number(calculatedTotal);
+      let amountInDollars: number;
+      let actualDepositPercentage: number;
+      let paymentType: "FULL" | "DEPOSIT" | "INSTALLMENT";
+      let paymentDescription: string;
+
+      if (customAmount !== undefined && customAmount > 0) {
+        // Custom amount specified
+        amountInDollars = customAmount;
+        actualDepositPercentage =
+          (customAmount / fullProjectAmountInDollars) * 100;
+        paymentType = actualDepositPercentage >= 100 ? "FULL" : "INSTALLMENT";
+        paymentDescription = `Payment - $${customAmount.toFixed(2)} (${actualDepositPercentage.toFixed(2)}%)`;
+      } else if (depositPercentage !== undefined && depositPercentage > 0) {
+        // Percentage specified
+        actualDepositPercentage = depositPercentage;
+        amountInDollars =
+          (fullProjectAmountInDollars * depositPercentage) / 100;
+        paymentType = depositPercentage >= 100 ? "FULL" : "DEPOSIT";
+        paymentDescription = `${depositPercentage >= 100 ? "Full Payment" : `Deposit (${depositPercentage}%)`} - $${amountInDollars.toFixed(2)}`;
+      } else {
+        // Default to 25% deposit
+        actualDepositPercentage = 25;
+        amountInDollars = (fullProjectAmountInDollars * 25) / 100;
+        paymentType = "DEPOSIT";
+        paymentDescription = `Initial Deposit (25%) - $${amountInDollars.toFixed(2)}`;
+      }
+
+      // ✅ VALIDATION: First payment must be at least 25%
+      if (isFirstPayment && actualDepositPercentage < 25) {
+        throw new Error(
+          `First payment must be at least 25% of the project total. ` +
+            `You attempted to pay ${actualDepositPercentage.toFixed(2)}% ($${amountInDollars.toFixed(2)}). ` +
+            `Minimum required: $${(fullProjectAmountInDollars * 0.25).toFixed(2)} (25%)`,
+        );
+      }
+
+      // Convert to cents for Stripe
       const amountInCents = Math.round(amountInDollars * 100);
 
       if (amountInCents <= 0) {
@@ -78,6 +128,13 @@ export class ProjectPaymentService {
           `Invalid payment amount: ${amountInDollars} dollars (${amountInCents} cents)`,
         );
       }
+
+      logger.info(`Creating checkout session for project ${projectId}`, {
+        fullAmount: fullProjectAmountInDollars,
+        paymentAmount: amountInDollars,
+        percentage: actualDepositPercentage,
+        paymentType,
+      });
 
       // Get customer details
       const customerEmail =
@@ -93,12 +150,15 @@ export class ProjectPaymentService {
         customerName,
         successUrl,
         cancelUrl,
-        description: `Project Payment - ${companyName}`,
+        description: `${paymentDescription} - ${companyName}`,
         metadata: {
           projectId: project.id,
           clientId: project.clientId,
           visitorId: project.visitorId || "",
           type: "project_payment",
+          paymentType,
+          depositPercentage: actualDepositPercentage.toString(),
+          fullProjectAmount: fullProjectAmountInDollars.toString(),
         },
       });
 
@@ -111,12 +171,18 @@ export class ProjectPaymentService {
           clientEmail: customerEmail,
           clientName: customerName,
           status: "PENDING",
-          description: `Project Payment - ${companyName}`,
+          description: `${paymentDescription} - ${companyName}`,
+          paymentType,
+          depositPercentage: new Decimal(actualDepositPercentage),
+          fullProjectAmount: new Decimal(fullProjectAmountInDollars),
           metadata: {
             projectId: project.id,
             clientId: project.clientId,
             visitorId: project.visitorId || "",
             type: "project_payment",
+            paymentType,
+            depositPercentage: actualDepositPercentage.toString(),
+            fullProjectAmount: fullProjectAmountInDollars.toString(),
           },
           userId: project.clientId,
           projectId: project.id,

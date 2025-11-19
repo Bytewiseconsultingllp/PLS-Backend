@@ -22,7 +22,7 @@ const router = Router();
 router.post(
   "/",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator, // Only admin should create moderators
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can create moderators
   validateDataMiddleware(createModeratorSchema),
   moderatorController.createModerator,
 );
@@ -34,7 +34,7 @@ router.post(
 router.get(
   "/",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can list all moderators
   moderatorController.getAllModerators,
 );
 
@@ -45,7 +45,7 @@ router.get(
 router.get(
   "/:id",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can view moderator details
   moderatorController.getModeratorById,
 );
 
@@ -56,7 +56,7 @@ router.get(
 router.patch(
   "/:id",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can update moderators
   validateDataMiddleware(updateModeratorSchema),
   moderatorController.updateModerator,
 );
@@ -68,7 +68,7 @@ router.patch(
 router.patch(
   "/:id/toggle-status",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can toggle moderator status
   validateDataMiddleware(toggleModeratorStatusSchema),
   moderatorController.toggleModeratorStatus,
 );
@@ -80,7 +80,7 @@ router.patch(
 router.delete(
   "/:id",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can delete moderators
   moderatorController.deleteModerator,
 );
 
@@ -95,7 +95,7 @@ router.delete(
 router.post(
   "/projects/:projectId/assign-moderator",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can assign moderators to projects
   validateDataMiddleware(assignModeratorToProjectSchema),
   moderatorController.assignModeratorToProject,
 );
@@ -107,7 +107,7 @@ router.post(
 router.delete(
   "/projects/:projectId/moderator",
   authMiddleware.checkToken,
-  authMiddleware.checkIfUserIAdminOrModerator,
+  authMiddleware.checkIfUserIsAdmin, // ✅ SECURITY FIX: Only admins can unassign moderators from projects
   moderatorController.unassignModeratorFromProject,
 );
 

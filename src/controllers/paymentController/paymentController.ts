@@ -201,19 +201,19 @@ export class PaymentController {
       });
     } catch (error) {
       const errorDetails =
-      error instanceof Error
-        ? {
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
-          }
-        : { error: String(error) };
+        error instanceof Error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              name: error.name,
+            }
+          : { error: String(error) };
       logger.error("Error creating checkout session:", error);
       res.status(500).json({
         success: false,
         message: "Failed to create checkout session",
         error: error instanceof Error ? error.message : "Unknown error",
-         debug: errorDetails, // Remove this in production after debugging
+        debug: errorDetails, // Remove this in production after debugging
       });
     }
   }
@@ -312,6 +312,195 @@ export class PaymentController {
       res.status(500).json({
         success: false,
         message: "Failed to get checkout session status",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Verify checkout session (Client-side fallback for missed webhooks)
+   * POST /api/v1/payments/verify-session
+   */
+  static async verifyCheckoutSession(
+    req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const { sessionId } = req.body as { sessionId: string };
+      const userId = req.userFromToken?.uid;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          message: "Session ID is required",
+        });
+        return;
+      }
+
+      // Get payment from DB
+      const payment = await prisma.payment.findFirst({
+        where: {
+          stripeSessionId: sessionId,
+          userId: userId, // Verify ownership
+        },
+        include: { project: true },
+      });
+
+      if (!payment) {
+        res.status(404).json({
+          success: false,
+          message:
+            "Payment not found or you don't have permission to access it",
+        });
+        return;
+      }
+
+      // If already succeeded, return immediately
+      if (payment.status === "SUCCEEDED") {
+        res.status(200).json({
+          success: true,
+          message: "Payment already verified",
+          data: {
+            status: "SUCCEEDED",
+            projectId: payment.projectId,
+            paidAt: payment.paidAt,
+          },
+        });
+        return;
+      }
+
+      // ✅ FALLBACK: Check Stripe directly (in case webhook failed)
+      const stripeSession = await StripeService.getCheckoutSession(sessionId);
+
+      logger.info(`Verifying payment status from Stripe`, {
+        sessionId,
+        stripeStatus: stripeSession.payment_status,
+        dbStatus: payment.status,
+      });
+
+      // Update DB if Stripe says paid but we show pending
+      if (
+        stripeSession.payment_status === "paid" &&
+        payment.status === "PENDING"
+      ) {
+        logger.warn(
+          `⚠️  Webhook missed! Updating payment ${payment.id} from API check`,
+        );
+
+        await prisma.$transaction(async (tx) => {
+          // Update payment
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: "SUCCEEDED",
+              paidAt: new Date(),
+              lastCheckedAt: new Date(),
+              webhookRetryCount: payment.webhookRetryCount + 1,
+            },
+          });
+
+          // Update project with cumulative tracking
+          if (payment.projectId && payment.project) {
+            // Get full project with estimate
+            const fullProject = await tx.project.findUnique({
+              where: { id: payment.projectId },
+              include: { estimate: true },
+            });
+
+            if (fullProject && fullProject.estimate) {
+              // Calculate payment amount in dollars
+              const paymentAmountInDollars = payment.amount / 100;
+
+              // Calculate new cumulative total
+              const currentTotalPaid = Number(fullProject.totalAmountPaid || 0);
+              const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
+
+              // Calculate completion percentage
+              const fullProjectAmount = Number(
+                fullProject.estimate.calculatedTotal || 0,
+              );
+              const completionPercentage =
+                fullProjectAmount > 0
+                  ? (newTotalPaid / fullProjectAmount) * 100
+                  : 0;
+
+              // Determine payment status
+              // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
+              const isFirstPayment = currentTotalPaid === 0;
+              let newPaymentStatus = fullProject.paymentStatus;
+
+              if (isFirstPayment && completionPercentage >= 25) {
+                newPaymentStatus = "SUCCEEDED";
+              }
+
+              await tx.project.update({
+                where: { id: payment.projectId },
+                data: {
+                  totalAmountPaid: newTotalPaid,
+                  paymentCompletionPercentage: completionPercentage,
+                  paymentStatus: newPaymentStatus,
+                },
+              });
+
+              logger.info(
+                `Project payment updated via API check: ${payment.projectId}`,
+                {
+                  paymentAmount: paymentAmountInDollars,
+                  totalPaid: newTotalPaid,
+                  fullAmount: fullProjectAmount,
+                  completionPercentage: completionPercentage.toFixed(2),
+                  paymentStatus: newPaymentStatus,
+                  isFirstPayment,
+                },
+              );
+            }
+          }
+
+          // Log verification
+          await tx.paymentVerificationLog.create({
+            data: {
+              paymentId: payment.id,
+              verifiedBy: "api_check",
+              stripeStatus: "paid",
+              ourStatus: "SUCCEEDED",
+              matched: false, // Was out of sync
+            },
+          });
+        });
+
+        res.status(200).json({
+          success: true,
+          message: "Payment verified and status updated (webhook was missed)",
+          data: {
+            status: "SUCCEEDED",
+            projectId: payment.projectId,
+            wasOutOfSync: true,
+          },
+        });
+        return;
+      }
+
+      // Update lastCheckedAt even if status matches
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { lastCheckedAt: new Date() },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Payment verified",
+        data: {
+          status:
+            stripeSession.payment_status === "paid" ? "SUCCEEDED" : "PENDING",
+          projectId: payment.projectId,
+          wasOutOfSync: false,
+        },
+      });
+    } catch (error) {
+      logger.error("Error verifying checkout session:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to verify payment",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -560,40 +749,148 @@ export class PaymentController {
 
 // Helper functions for webhook handling
 async function handlePaymentIntentSucceeded(event: {
+  id: string;
   data: { object: { id: string } };
 }): Promise<void> {
   const paymentIntent = event.data.object;
+  const eventId = event.id;
 
-  // Update payment record
-  const payments = await prisma.payment.updateMany({
+  // ✅ STEP 1: Check if we already processed this event (idempotency)
+  const existingPayment = await prisma.payment.findFirst({
     where: {
       stripePaymentIntentId: paymentIntent.id,
-    },
-    data: {
-      status: "SUCCEEDED",
-      paidAt: new Date(),
+      webhookEventsProcessed: {
+        has: eventId, // Already processed this specific event
+      },
     },
   });
 
-  // Update project payment status if this is a project payment
-  if (payments.count > 0) {
-    const payment = await prisma.payment.findFirst({
-      where: { stripePaymentIntentId: paymentIntent.id },
-      select: { projectId: true },
-    });
-
-    if (payment?.projectId) {
-      await prisma.project.update({
-        where: { id: payment.projectId },
-        data: { paymentStatus: "SUCCEEDED" },
-      });
-      logger.info(
-        `Project payment status updated to SUCCEEDED: ${payment.projectId}`,
-      );
-    }
+  if (existingPayment) {
+    logger.info(
+      `Event ${eventId} already processed for payment intent ${paymentIntent.id}, skipping`,
+    );
+    return; // ✅ Idempotent - safe to receive multiple times
   }
 
-  logger.info(`Payment succeeded: ${paymentIntent.id}`);
+  // ✅ STEP 2: Use transaction to prevent race conditions
+  await prisma.$transaction(async (tx) => {
+    // Update payment with idempotency tracking
+    const payment = await tx.payment.findFirst({
+      where: { stripePaymentIntentId: paymentIntent.id },
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        amount: true,
+        depositPercentage: true,
+        fullProjectAmount: true,
+      },
+    });
+
+    if (!payment) {
+      logger.warn(`Payment not found for payment intent ${paymentIntent.id}`);
+      return;
+    }
+
+    // Only update if not already succeeded
+    if (payment.status !== "SUCCEEDED") {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: "SUCCEEDED",
+          paidAt: new Date(),
+          lastWebhookEventId: eventId,
+          webhookEventsProcessed: {
+            push: eventId, // Add to array
+          },
+          lastCheckedAt: new Date(),
+        },
+      });
+
+      // Update project payment status and cumulative tracking if this is a project payment
+      if (payment.projectId) {
+        // Get current project state and estimate
+        const project = await tx.project.findUnique({
+          where: { id: payment.projectId },
+          include: { estimate: true },
+        });
+
+        if (project && project.estimate) {
+          // Calculate payment amount in dollars
+          const paymentAmountInDollars = payment.amount / 100;
+
+          // Calculate new cumulative total
+          const currentTotalPaid = Number(project.totalAmountPaid || 0);
+          const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
+
+          // Calculate completion percentage
+          const fullProjectAmount = Number(
+            project.estimate.calculatedTotal || 0,
+          );
+          const completionPercentage =
+            fullProjectAmount > 0
+              ? (newTotalPaid / fullProjectAmount) * 100
+              : 0;
+
+          // Determine payment status
+          // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
+          const isFirstPayment = currentTotalPaid === 0;
+          let newPaymentStatus = project.paymentStatus;
+
+          if (isFirstPayment && completionPercentage >= 25) {
+            newPaymentStatus = "SUCCEEDED";
+          }
+
+          await tx.project.update({
+            where: { id: payment.projectId },
+            data: {
+              totalAmountPaid: newTotalPaid,
+              paymentCompletionPercentage: completionPercentage,
+              paymentStatus: newPaymentStatus,
+            },
+          });
+
+          logger.info(`Project payment updated: ${payment.projectId}`, {
+            paymentAmount: paymentAmountInDollars,
+            totalPaid: newTotalPaid,
+            fullAmount: fullProjectAmount,
+            completionPercentage: completionPercentage.toFixed(2),
+            paymentStatus: newPaymentStatus,
+            isFirstPayment,
+          });
+        }
+      }
+
+      // ✅ Log verification
+      await tx.paymentVerificationLog.create({
+        data: {
+          paymentId: payment.id,
+          verifiedBy: "webhook",
+          stripeStatus: "succeeded",
+          ourStatus: "SUCCEEDED",
+          matched: true,
+          eventId: eventId,
+        },
+      });
+
+      logger.info(
+        `Payment succeeded: ${paymentIntent.id} via webhook event ${eventId}`,
+      );
+    } else {
+      // Already succeeded, just log the duplicate event
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          webhookEventsProcessed: {
+            push: eventId,
+          },
+        },
+      });
+      logger.info(
+        `Payment already succeeded: ${paymentIntent.id}, logged duplicate event ${eventId}`,
+      );
+    }
+  });
 }
 
 async function handlePaymentIntentFailed(event: {
@@ -633,40 +930,164 @@ async function handlePaymentIntentFailed(event: {
 }
 
 async function handleCheckoutSessionCompleted(event: {
-  data: { object: { id: string } };
+  id: string;
+  data: { object: { id: string; payment_intent?: string | object | null } };
 }): Promise<void> {
   const session = event.data.object;
+  const eventId = event.id;
 
-  // Update payment record
-  const payments = await prisma.payment.updateMany({
+  // ✅ STEP 1: Check if we already processed this event (idempotency)
+  const existingPayment = await prisma.payment.findFirst({
     where: {
       stripeSessionId: session.id,
-    },
-    data: {
-      status: "SUCCEEDED",
-      paidAt: new Date(),
+      webhookEventsProcessed: {
+        has: eventId, // Already processed this specific event
+      },
     },
   });
 
-  // Update project payment status if this is a project payment
-  if (payments.count > 0) {
-    const payment = await prisma.payment.findFirst({
-      where: { stripeSessionId: session.id },
-      select: { projectId: true },
-    });
-
-    if (payment?.projectId) {
-      await prisma.project.update({
-        where: { id: payment.projectId },
-        data: { paymentStatus: "SUCCEEDED" },
-      });
-      logger.info(
-        `Project payment status updated to SUCCEEDED: ${payment.projectId}`,
-      );
-    }
+  if (existingPayment) {
+    logger.info(
+      `Event ${eventId} already processed for session ${session.id}, skipping`,
+    );
+    return; // ✅ Idempotent - safe to receive multiple times
   }
 
-  logger.info(`Checkout session completed: ${session.id}`);
+  // ✅ STEP 2: Use transaction to prevent race conditions
+  await prisma.$transaction(async (tx) => {
+    // Update payment with idempotency tracking
+    const payment = await tx.payment.findFirst({
+      where: { stripeSessionId: session.id },
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        amount: true,
+        depositPercentage: true,
+        fullProjectAmount: true,
+      },
+    });
+
+    if (!payment) {
+      logger.warn(`Payment not found for session ${session.id}`);
+      return;
+    }
+
+    // Only update if not already succeeded
+    if (payment.status !== "SUCCEEDED") {
+      // ✅ CRITICAL FIX: Extract payment intent ID from session
+      let paymentIntentId: string | null = null;
+      if (session.payment_intent) {
+        if (typeof session.payment_intent === "string") {
+          paymentIntentId = session.payment_intent;
+        } else if (
+          typeof session.payment_intent === "object" &&
+          "id" in session.payment_intent
+        ) {
+          paymentIntentId = (session.payment_intent as { id: string }).id;
+        }
+      }
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: "SUCCEEDED",
+          paidAt: new Date(),
+          lastWebhookEventId: eventId,
+          webhookEventsProcessed: {
+            push: eventId, // Add to array
+          },
+          lastCheckedAt: new Date(),
+          ...(paymentIntentId && {
+            stripePaymentIntentId: paymentIntentId,
+          }),
+        },
+      });
+
+      // Update project payment status and cumulative tracking if this is a project payment
+      if (payment.projectId) {
+        // Get current project state and estimate
+        const project = await tx.project.findUnique({
+          where: { id: payment.projectId },
+          include: { estimate: true },
+        });
+
+        if (project && project.estimate) {
+          // Calculate payment amount in dollars
+          const paymentAmountInDollars = payment.amount / 100;
+
+          // Calculate new cumulative total
+          const currentTotalPaid = Number(project.totalAmountPaid || 0);
+          const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
+
+          // Calculate completion percentage
+          const fullProjectAmount = Number(
+            project.estimate.calculatedTotal || 0,
+          );
+          const completionPercentage =
+            fullProjectAmount > 0
+              ? (newTotalPaid / fullProjectAmount) * 100
+              : 0;
+
+          // Determine payment status
+          // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
+          const isFirstPayment = currentTotalPaid === 0;
+          let newPaymentStatus = project.paymentStatus;
+
+          if (isFirstPayment && completionPercentage >= 25) {
+            newPaymentStatus = "SUCCEEDED";
+          }
+
+          await tx.project.update({
+            where: { id: payment.projectId },
+            data: {
+              totalAmountPaid: newTotalPaid,
+              paymentCompletionPercentage: completionPercentage,
+              paymentStatus: newPaymentStatus,
+            },
+          });
+
+          logger.info(`Project payment updated: ${payment.projectId}`, {
+            paymentAmount: paymentAmountInDollars,
+            totalPaid: newTotalPaid,
+            fullAmount: fullProjectAmount,
+            completionPercentage: completionPercentage.toFixed(2),
+            paymentStatus: newPaymentStatus,
+            isFirstPayment,
+          });
+        }
+      }
+
+      // ✅ Log verification
+      await tx.paymentVerificationLog.create({
+        data: {
+          paymentId: payment.id,
+          verifiedBy: "webhook",
+          stripeStatus: "paid",
+          ourStatus: "SUCCEEDED",
+          matched: true,
+          eventId: eventId,
+        },
+      });
+
+      logger.info(
+        `Checkout session completed: ${session.id} via webhook event ${eventId}`,
+      );
+    } else {
+      // Already succeeded, just log the duplicate event
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          webhookEventsProcessed: {
+            push: eventId,
+          },
+        },
+      });
+      logger.info(
+        `Checkout session already completed: ${session.id}, logged duplicate event ${eventId}`,
+      );
+    }
+  });
 }
 
 async function handleCheckoutSessionExpired(event: {

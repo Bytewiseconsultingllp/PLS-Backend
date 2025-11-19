@@ -5,11 +5,14 @@ import {
   SUCCESSMSG,
   UNAUTHORIZEDCODE,
 } from "../../constants";
+import { PrismaClient } from "@prisma/client";
 import { projectService } from "../../services/projectService";
 import type { TPROJECT_CREATE, TMILESTONE } from "../../types";
 import { httpResponse } from "../../utils/apiResponseUtils";
 import { asyncHandler } from "../../utils/asyncHandlerUtils";
 import type { _Request } from "../../middlewares/authMiddleware";
+
+const prisma = new PrismaClient();
 
 export default {
   /**
@@ -662,6 +665,7 @@ export default {
    * Get milestones for a project
    * Client can only view milestones for their own project
    * Admin can view any project's milestones
+   * Moderator can only view milestones for projects they're assigned to
    */
   getProjectMilestones: asyncHandler(async (req: _Request, res) => {
     const { id } = req.params;
@@ -690,6 +694,46 @@ export default {
         id,
         project.clientId,
       );
+    } else if (userRole === "MODERATOR") {
+      // Moderator can only view milestones for projects they're assigned to
+      const project = await prisma.project.findFirst({
+        where: {
+          id,
+          assignedModeratorId: userId,
+          deletedAt: null,
+        },
+        select: { id: true, clientId: true },
+      });
+
+      if (!project) {
+        throw {
+          status: UNAUTHORIZEDCODE,
+          message: "You are not assigned as moderator for this project",
+        };
+      }
+
+      // Fetch milestones for the project
+      milestones = await prisma.milestone.findMany({
+        where: {
+          projectId: id,
+          deletedAt: null,
+        },
+        include: {
+          assignedFreelancer: {
+            select: {
+              id: true,
+              details: {
+                select: {
+                  fullName: true,
+                  email: true,
+                  primaryDomain: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { deadline: "asc" },
+      });
     } else {
       // Client can only view their own project's milestones
       milestones = await projectService.getProjectMilestones(id, userId);

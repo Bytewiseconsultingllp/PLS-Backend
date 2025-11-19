@@ -68,7 +68,7 @@ router.get(
 /**
  * @route   GET /api/projects/:id/milestones
  * @desc    Get all milestones for a project
- * @access  Private (CLIENT/ADMIN)
+ * @access  Private (CLIENT/ADMIN/MODERATOR)
  */
 router.get(
   "/:id/milestones",
