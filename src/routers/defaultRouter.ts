@@ -81,11 +81,11 @@ defaultRouter.use(endpoint.PROJECT, newProjectRouter);
 // **   CLIENT PROJECT DRAFT ROUTER (NEW) - step-by-step project creation for existing clients
 defaultRouter.use(`${endpoint.PROJECT}/draft`, clientProjectDraftRouter);
 
-// **   FREELANCER STRIPE CONNECT ROUTER (OAuth flow - MUST be first to handle public callback)
-defaultRouter.use(endpoint.FREELANCER, freelancerStripeConnectRouter);
-
-// **   FREELANCERS ROUTER (NEW)
+// **   FREELANCERS ROUTER (NEW) - MUST be first to handle /admin routes before other middleware
 defaultRouter.use(endpoint.FREELANCER, newFreelancerRouter);
+
+// **   FREELANCER STRIPE CONNECT ROUTER (OAuth flow)
+defaultRouter.use(endpoint.FREELANCER, freelancerStripeConnectRouter);
 
 // **   FREELANCER PAYMENT ROUTER (Freelancer manages their own payment details)
 defaultRouter.use(endpoint.FREELANCER, freelancerPaymentRouter);
