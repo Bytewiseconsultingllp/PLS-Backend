@@ -45,6 +45,15 @@ router.get("/stripe-connect-url", (req, res) =>
 );
 
 /**
+ * @route GET /api/v1/freelancer/stripe-connect-supported-countries
+ * @desc List supported countries for Stripe Connect onboarding
+ * @access Freelancer only
+ */
+router.get("/stripe-connect-supported-countries", (req, res) =>
+  FreelancerStripeConnectController.listSupportedCountries(req, res),
+);
+
+/**
  * @route GET /api/v1/freelancer/stripe-connect-status
  * @desc Get current Stripe Connect status and account details
  * @access Freelancer only

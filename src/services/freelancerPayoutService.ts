@@ -4,7 +4,11 @@ import {
   type PayoutType,
   StripeAccountStatus,
 } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import StripeService from "./stripeService";
+import CurrencyDetectionService from "./currencyDetectionService";
+import CurrencyConversionService from "./currencyConversionService";
+import { PLATFORM_CURRENCY } from "../constants/currency";
 import logger from "../utils/loggerUtils";
 
 const prisma = new PrismaClient();
@@ -241,6 +245,7 @@ export class FreelancerPayoutService {
             select: {
               email: true,
               fullName: true,
+              country: true,
             },
           },
         },
@@ -299,15 +304,66 @@ export class FreelancerPayoutService {
         }
       }
 
-      // Convert amount from dollars to cents
-      const amountInCents = Math.round(amount * 100);
+      const stripeAccount = await StripeService.getConnectAccount(
+        freelancer.stripeAccountId,
+      );
+
+      const normalizedRequestedCurrency =
+        CurrencyDetectionService.normalizeCurrency(currency);
+      const stripeDefaultCurrency = CurrencyDetectionService.normalizeCurrency(
+        stripeAccount.default_currency,
+      );
+      const countryCurrency = freelancer.details?.country
+        ? CurrencyDetectionService.getCurrencyForCountry(
+            freelancer.details.country,
+          )
+        : undefined;
+
+      const payoutCurrency =
+        normalizedRequestedCurrency ||
+        stripeDefaultCurrency ||
+        countryCurrency ||
+        PLATFORM_CURRENCY;
+
+      const platformAmountMajor = amount;
+      let freelancerAmountMajor = platformAmountMajor;
+      let appliedExchangeRate: number | undefined =
+        payoutCurrency === PLATFORM_CURRENCY ? 1 : undefined;
+
+      if (payoutCurrency !== PLATFORM_CURRENCY) {
+        try {
+          const conversion = await CurrencyConversionService.convert({
+            amount: platformAmountMajor,
+            fromCurrency: PLATFORM_CURRENCY,
+            toCurrency: payoutCurrency,
+          });
+          freelancerAmountMajor = conversion.convertedAmount;
+          appliedExchangeRate = conversion.exchangeRate;
+        } catch (conversionError) {
+          logger.warn(
+            "Freelancer payout conversion failed; falling back to platform amount",
+            {
+              freelancerId,
+              payoutCurrency,
+              error: conversionError,
+            },
+          );
+          freelancerAmountMajor = platformAmountMajor;
+          appliedExchangeRate = undefined;
+        }
+      }
+
+      const amountInMinorUnits = CurrencyDetectionService.convertToMinorUnits(
+        freelancerAmountMajor,
+        payoutCurrency,
+      );
 
       // Create payout record first (PENDING status)
       const payout = await prisma.freelancerPayout.create({
         data: {
           freelancerId,
-          amount,
-          currency,
+          amount: new Decimal(platformAmountMajor.toFixed(2)),
+          currency: PLATFORM_CURRENCY,
           status: PayoutStatus.PENDING,
           payoutType,
           description,
@@ -315,6 +371,12 @@ export class FreelancerPayoutService {
           projectId,
           milestoneId,
           initiatedBy,
+          freelancerCurrency: payoutCurrency,
+          platformCurrency: PLATFORM_CURRENCY,
+          platformAmount: new Decimal(platformAmountMajor.toFixed(2)),
+          ...(appliedExchangeRate
+            ? { exchangeRate: new Decimal(appliedExchangeRate.toFixed(6)) }
+            : {}),
         },
         include: {
           freelancer: {
@@ -330,8 +392,8 @@ export class FreelancerPayoutService {
       try {
         // Create Stripe transfer
         const transfer = await StripeService.createTransfer(
-          amountInCents,
-          currency,
+          amountInMinorUnits,
+          payoutCurrency,
           freelancer.stripeAccountId,
           description || `Payout to ${freelancer.details?.fullName}`,
           {
@@ -340,8 +402,60 @@ export class FreelancerPayoutService {
             payoutType,
             ...(projectId && { projectId }),
             ...(milestoneId && { milestoneId }),
+            platformCurrency: PLATFORM_CURRENCY,
+            platformAmount: platformAmountMajor.toString(),
+            freelancerCurrency: payoutCurrency,
+            freelancerAmount: freelancerAmountMajor.toString(),
+            exchangeRate: appliedExchangeRate?.toString() || "",
           },
         );
+
+        const balanceTransactionId =
+          typeof transfer.balance_transaction === "string"
+            ? transfer.balance_transaction
+            : null;
+        let platformCurrency = PLATFORM_CURRENCY;
+        let platformAmount = platformAmountMajor;
+        let exchangeRate: number | undefined;
+
+        if (balanceTransactionId) {
+          try {
+            const balanceTransaction =
+              await StripeService.getBalanceTransaction(balanceTransactionId);
+            platformCurrency =
+              CurrencyDetectionService.normalizeCurrency(
+                balanceTransaction.currency,
+              ) || PLATFORM_CURRENCY;
+            platformAmount = CurrencyDetectionService.convertFromMinorUnits(
+              balanceTransaction.amount,
+              platformCurrency,
+            );
+            exchangeRate =
+              balanceTransaction.exchange_rate &&
+              balanceTransaction.exchange_rate > 0
+                ? balanceTransaction.exchange_rate
+                : exchangeRate;
+          } catch (error) {
+            logger.warn("Failed to fetch balance transaction for payout", {
+              transferId: transfer.id,
+              error,
+            });
+          }
+        } else if (payoutCurrency === PLATFORM_CURRENCY) {
+          platformCurrency = PLATFORM_CURRENCY;
+          platformAmount = amount;
+          exchangeRate = 1;
+        }
+
+        const platformAmountDecimal = new Decimal(
+          CurrencyDetectionService.isZeroDecimal(platformCurrency)
+            ? Math.round(platformAmount).toString()
+            : platformAmount.toFixed(2),
+        );
+        const exchangeRateDecimal =
+          typeof exchangeRate === "number" && exchangeRate > 0
+            ? new Decimal(exchangeRate.toFixed(6))
+            : undefined;
 
         // Update payout with transfer ID and status
         const updatedPayout = await prisma.freelancerPayout.update({
@@ -350,6 +464,10 @@ export class FreelancerPayoutService {
             stripeTransferId: transfer.id,
             status: PayoutStatus.PROCESSING,
             processedAt: new Date(),
+            freelancerCurrency: payoutCurrency,
+            platformCurrency,
+            platformAmount: platformAmountDecimal,
+            exchangeRate: exchangeRateDecimal,
           },
           include: {
             freelancer: {
@@ -364,8 +482,12 @@ export class FreelancerPayoutService {
 
         logger.info(`Payout created successfully: ${payout.id}`, {
           transferId: transfer.id,
-          amount,
           freelancerId,
+          platformAmount,
+          platformCurrency,
+          freelancerAmount: freelancerAmountMajor,
+          freelancerCurrency: payoutCurrency,
+          exchangeRate: exchangeRate ?? appliedExchangeRate,
         });
 
         return {

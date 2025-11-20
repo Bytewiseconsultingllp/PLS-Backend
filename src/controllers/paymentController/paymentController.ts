@@ -1,6 +1,11 @@
 import type { Request, Response } from "express";
+import type { Prisma } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
+import type Stripe from "stripe";
 import StripeService from "../../services/stripeService";
+import CurrencyDetectionService from "../../services/currencyDetectionService";
+import { PLATFORM_CURRENCY } from "../../constants/currency";
 import { STRIPE_WEBHOOK_SECRET } from "../../config/config";
 import logger from "../../utils/loggerUtils";
 
@@ -55,10 +60,24 @@ export class PaymentController {
       } = body;
       const userId = req.userFromToken?.uid;
 
+      const normalizedCurrency =
+        CurrencyDetectionService.normalizeCurrency(currency)?.toLowerCase() ||
+        "usd";
+      const originalAmountMajor =
+        CurrencyDetectionService.convertFromMinorUnits(
+          amount,
+          normalizedCurrency,
+        );
+      const zeroDecimalCurrency =
+        CurrencyDetectionService.isZeroDecimal(normalizedCurrency);
+      const originalAmountValue = zeroDecimalCurrency
+        ? Math.round(originalAmountMajor)
+        : Number(originalAmountMajor.toFixed(2));
+
       // Create payment intent in Stripe
       const paymentIntent = await StripeService.createPaymentIntent({
         amount,
-        currency: currency || "usd",
+        currency: normalizedCurrency,
         customerEmail,
         customerName,
         customerPhone,
@@ -74,6 +93,9 @@ export class PaymentController {
         clientEmail: string;
         status: "PENDING";
         metadata: Record<string, string>;
+        originalCurrency: string;
+        originalAmount: Decimal;
+        platformCurrency: string;
         userId?: string;
         clientName?: string;
         clientPhone?: string;
@@ -81,10 +103,13 @@ export class PaymentController {
       } = {
         stripePaymentIntentId: paymentIntent.id,
         amount,
-        currency: currency || "usd",
+        currency: normalizedCurrency,
         clientEmail: customerEmail,
         status: "PENDING",
         metadata: metadata || {},
+        originalCurrency: normalizedCurrency,
+        originalAmount: new Decimal(originalAmountValue.toString()),
+        platformCurrency: PLATFORM_CURRENCY,
       };
 
       if (userId) paymentData.userId = userId;
@@ -143,10 +168,24 @@ export class PaymentController {
       } = body;
       const userId = req.userFromToken?.uid;
 
+      const normalizedCurrency =
+        CurrencyDetectionService.normalizeCurrency(currency)?.toLowerCase() ||
+        "usd";
+      const originalAmountMajor =
+        CurrencyDetectionService.convertFromMinorUnits(
+          amount,
+          normalizedCurrency,
+        );
+      const zeroDecimalCurrency =
+        CurrencyDetectionService.isZeroDecimal(normalizedCurrency);
+      const originalAmountValue = zeroDecimalCurrency
+        ? Math.round(originalAmountMajor)
+        : Number(originalAmountMajor.toFixed(2));
+
       // Create checkout session in Stripe
       const session = await StripeService.createCheckoutSession({
         amount,
-        currency: currency || "usd",
+        currency: normalizedCurrency,
         customerEmail,
         customerName,
         successUrl,
@@ -163,16 +202,22 @@ export class PaymentController {
         clientEmail: string;
         status: "PENDING";
         metadata: Record<string, string>;
+        originalCurrency: string;
+        originalAmount: Decimal;
+        platformCurrency: string;
         userId?: string;
         clientName?: string;
         description?: string;
       } = {
         stripeSessionId: session.id,
         amount,
-        currency: currency || "usd",
+        currency: normalizedCurrency,
         clientEmail: customerEmail,
         status: "PENDING",
         metadata: metadata || {},
+        originalCurrency: normalizedCurrency,
+        originalAmount: new Decimal(originalAmountValue.toString()),
+        platformCurrency: PLATFORM_CURRENCY,
       };
 
       if (userId) paymentData.userId = userId;
@@ -371,6 +416,7 @@ export class PaymentController {
 
       // ✅ FALLBACK: Check Stripe directly (in case webhook failed)
       const stripeSession = await StripeService.getCheckoutSession(sessionId);
+      const paymentIntentId = extractPaymentIntentIdFromSession(stripeSession);
 
       logger.info(`Verifying payment status from Stripe`, {
         sessionId,
@@ -388,7 +434,19 @@ export class PaymentController {
         );
 
         await prisma.$transaction(async (tx) => {
-          // Update payment
+          const financialDetails = await resolvePaymentFinancialDetails({
+            paymentIntentId,
+            fallbackCurrency: stripeSession.currency || payment.currency,
+            fallbackAmountMinor:
+              typeof stripeSession.amount_total === "number"
+                ? stripeSession.amount_total
+                : payment.amount,
+          });
+          const paymentIntentUpdate =
+            typeof paymentIntentId === "string"
+              ? { stripePaymentIntentId: paymentIntentId }
+              : {};
+
           await tx.payment.update({
             where: { id: payment.id },
             data: {
@@ -396,74 +454,27 @@ export class PaymentController {
               paidAt: new Date(),
               lastCheckedAt: new Date(),
               webhookRetryCount: payment.webhookRetryCount + 1,
+              ...paymentIntentUpdate,
+              ...buildFinancialUpdate(financialDetails),
             },
           });
 
-          // Update project with cumulative tracking
-          if (payment.projectId && payment.project) {
-            // Get full project with estimate
-            const fullProject = await tx.project.findUnique({
-              where: { id: payment.projectId },
-              include: { estimate: true },
-            });
-
-            if (fullProject && fullProject.estimate) {
-              // Calculate payment amount in dollars
-              const paymentAmountInDollars = payment.amount / 100;
-
-              // Calculate new cumulative total
-              const currentTotalPaid = Number(fullProject.totalAmountPaid || 0);
-              const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
-
-              // Calculate completion percentage
-              const fullProjectAmount = Number(
-                fullProject.estimate.calculatedTotal || 0,
-              );
-              const completionPercentage =
-                fullProjectAmount > 0
-                  ? (newTotalPaid / fullProjectAmount) * 100
-                  : 0;
-
-              // Determine payment status
-              // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
-              const isFirstPayment = currentTotalPaid === 0;
-              let newPaymentStatus = fullProject.paymentStatus;
-
-              if (isFirstPayment && completionPercentage >= 25) {
-                newPaymentStatus = "SUCCEEDED";
-              }
-
-              await tx.project.update({
-                where: { id: payment.projectId },
-                data: {
-                  totalAmountPaid: newTotalPaid,
-                  paymentCompletionPercentage: completionPercentage,
-                  paymentStatus: newPaymentStatus,
-                },
-              });
-
-              logger.info(
-                `Project payment updated via API check: ${payment.projectId}`,
-                {
-                  paymentAmount: paymentAmountInDollars,
-                  totalPaid: newTotalPaid,
-                  fullAmount: fullProjectAmount,
-                  completionPercentage: completionPercentage.toFixed(2),
-                  paymentStatus: newPaymentStatus,
-                  isFirstPayment,
-                },
-              );
-            }
+          if (payment.projectId && financialDetails.platformAmount > 0) {
+            await applyProjectPaymentProgress(
+              tx,
+              payment.projectId,
+              financialDetails.platformAmount,
+              "api_check",
+            );
           }
 
-          // Log verification
           await tx.paymentVerificationLog.create({
             data: {
               paymentId: payment.id,
               verifiedBy: "api_check",
               stripeStatus: "paid",
               ourStatus: "SUCCEEDED",
-              matched: false, // Was out of sync
+              matched: false,
             },
           });
         });
@@ -549,27 +560,39 @@ export class PaymentController {
       });
 
       // Handle different event types
-      switch (event.type) {
-        case "payment_intent.succeeded":
-          await handlePaymentIntentSucceeded(event);
-          break;
-        case "payment_intent.payment_failed":
-          await handlePaymentIntentFailed(event);
-          break;
-        case "checkout.session.completed":
-          await handleCheckoutSessionCompleted(event);
-          break;
-        case "checkout.session.expired":
-          await handleCheckoutSessionExpired(event);
-          break;
-        case "charge.updated":
-        case "charge.succeeded":
-        case "payment_intent.created":
-          // These events are logged but don't require specific handling
-          logger.info(`Received ${event.type} event - no action required`);
-          break;
-        default:
-          logger.info(`Unhandled event type: ${event.type}`);
+      // Note: Some event types like transfer.* are not in Stripe's TypeScript definitions
+      // but are valid webhook events, so we handle them with string comparison
+      const eventType = event.type as string;
+
+      if (eventType === "transfer.paid") {
+        await handleTransferPaid(event);
+      } else if (eventType === "transfer.failed") {
+        await handleTransferFailed(event);
+      } else if (eventType === "transfer.reversed") {
+        await handleTransferReversed(event);
+      } else {
+        switch (event.type) {
+          case "payment_intent.succeeded":
+            await handlePaymentIntentSucceeded(event);
+            break;
+          case "payment_intent.payment_failed":
+            await handlePaymentIntentFailed(event);
+            break;
+          case "checkout.session.completed":
+            await handleCheckoutSessionCompleted(event);
+            break;
+          case "checkout.session.expired":
+            await handleCheckoutSessionExpired(event);
+            break;
+          case "charge.updated":
+          case "charge.succeeded":
+          case "payment_intent.created":
+            // These events are logged but don't require specific handling
+            logger.info(`Received ${event.type} event - no action required`);
+            break;
+          default:
+            logger.info(`Unhandled event type: ${event.type}`);
+        }
       }
 
       res.status(200).json({ received: true });
@@ -748,123 +771,103 @@ export class PaymentController {
 }
 
 // Helper functions for webhook handling
-async function handlePaymentIntentSucceeded(event: {
-  id: string;
-  data: { object: { id: string } };
-}): Promise<void> {
+async function handlePaymentIntentSucceeded(
+  event: Stripe.Event,
+): Promise<void> {
+  if (event.type !== "payment_intent.succeeded") {
+    return;
+  }
+
   const paymentIntent = event.data.object;
   const eventId = event.id;
 
-  // ✅ STEP 1: Check if we already processed this event (idempotency)
-  const existingPayment = await prisma.payment.findFirst({
-    where: {
-      stripePaymentIntentId: paymentIntent.id,
-      webhookEventsProcessed: {
-        has: eventId, // Already processed this specific event
-      },
-    },
+  const baseSelect = {
+    id: true,
+    projectId: true,
+    status: true,
+    webhookEventsProcessed: true,
+  } as const;
+
+  let targetPayment = await prisma.payment.findFirst({
+    where: { stripePaymentIntentId: paymentIntent.id },
+    select: baseSelect,
   });
 
-  if (existingPayment) {
+  let fallbackSessionId: string | null = null;
+
+  if (!targetPayment) {
+    try {
+      const session = await StripeService.findCheckoutSessionByPaymentIntent(
+        paymentIntent.id,
+      );
+      fallbackSessionId = session?.id ?? null;
+      if (fallbackSessionId) {
+        targetPayment = await prisma.payment.findFirst({
+          where: { stripeSessionId: fallbackSessionId },
+          select: baseSelect,
+        });
+      }
+    } catch (error) {
+      logger.warn("Unable to locate checkout session for payment intent", {
+        paymentIntentId: paymentIntent.id,
+        error: error instanceof Error ? error.message : error,
+      });
+    }
+  }
+
+  if (!targetPayment) {
+    logger.warn(
+      `Payment not found for payment intent ${paymentIntent.id}. Will wait for checkout session handler.`,
+    );
+    return;
+  }
+
+  if (targetPayment.webhookEventsProcessed.includes(eventId)) {
     logger.info(
       `Event ${eventId} already processed for payment intent ${paymentIntent.id}, skipping`,
     );
-    return; // ✅ Idempotent - safe to receive multiple times
+    return;
   }
+
+  const financialDetails = await resolvePaymentFinancialDetails({
+    paymentIntentId: paymentIntent.id,
+    fallbackCurrency: paymentIntent.currency,
+    fallbackAmountMinor:
+      paymentIntent.amount_received ?? paymentIntent.amount ?? undefined,
+  });
 
   // ✅ STEP 2: Use transaction to prevent race conditions
   await prisma.$transaction(async (tx) => {
-    // Update payment with idempotency tracking
-    const payment = await tx.payment.findFirst({
-      where: { stripePaymentIntentId: paymentIntent.id },
-      select: {
-        id: true,
-        projectId: true,
-        status: true,
-        amount: true,
-        depositPercentage: true,
-        fullProjectAmount: true,
-      },
-    });
-
-    if (!payment) {
-      logger.warn(`Payment not found for payment intent ${paymentIntent.id}`);
-      return;
-    }
-
     // Only update if not already succeeded
-    if (payment.status !== "SUCCEEDED") {
+    if (targetPayment.status !== "SUCCEEDED") {
       await tx.payment.update({
-        where: { id: payment.id },
+        where: { id: targetPayment.id },
         data: {
           status: "SUCCEEDED",
           paidAt: new Date(),
           lastWebhookEventId: eventId,
           webhookEventsProcessed: {
-            push: eventId, // Add to array
+            push: eventId,
           },
           lastCheckedAt: new Date(),
+          stripePaymentIntentId: paymentIntent.id,
+          ...buildFinancialUpdate(financialDetails),
         },
       });
 
-      // Update project payment status and cumulative tracking if this is a project payment
-      if (payment.projectId) {
-        // Get current project state and estimate
-        const project = await tx.project.findUnique({
-          where: { id: payment.projectId },
-          include: { estimate: true },
-        });
-
-        if (project && project.estimate) {
-          // Calculate payment amount in dollars
-          const paymentAmountInDollars = payment.amount / 100;
-
-          // Calculate new cumulative total
-          const currentTotalPaid = Number(project.totalAmountPaid || 0);
-          const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
-
-          // Calculate completion percentage
-          const fullProjectAmount = Number(
-            project.estimate.calculatedTotal || 0,
-          );
-          const completionPercentage =
-            fullProjectAmount > 0
-              ? (newTotalPaid / fullProjectAmount) * 100
-              : 0;
-
-          // Determine payment status
-          // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
-          const isFirstPayment = currentTotalPaid === 0;
-          let newPaymentStatus = project.paymentStatus;
-
-          if (isFirstPayment && completionPercentage >= 25) {
-            newPaymentStatus = "SUCCEEDED";
-          }
-
-          await tx.project.update({
-            where: { id: payment.projectId },
-            data: {
-              totalAmountPaid: newTotalPaid,
-              paymentCompletionPercentage: completionPercentage,
-              paymentStatus: newPaymentStatus,
-            },
-          });
-
-          logger.info(`Project payment updated: ${payment.projectId}`, {
-            paymentAmount: paymentAmountInDollars,
-            totalPaid: newTotalPaid,
-            fullAmount: fullProjectAmount,
-            completionPercentage: completionPercentage.toFixed(2),
-            paymentStatus: newPaymentStatus,
-            isFirstPayment,
-          });
-        }
+      if (targetPayment.projectId && financialDetails.platformAmount > 0) {
+        await applyProjectPaymentProgress(
+          tx,
+          targetPayment.projectId,
+          financialDetails.platformAmount,
+          "webhook",
+        );
       }
 
       // ✅ Log verification
       await tx.paymentVerificationLog.create({
         data: {
-          paymentId: payment.id,
+          paymentId: targetPayment.id,
           verifiedBy: "webhook",
           stripeStatus: "succeeded",
           ourStatus: "SUCCEEDED",
@@ -879,7 +882,7 @@ async function handlePaymentIntentSucceeded(event: {
     } else {
       // Already succeeded, just log the duplicate event
       await tx.payment.update({
-        where: { id: payment.id },
+        where: { id: targetPayment.id },
         data: {
           webhookEventsProcessed: {
             push: eventId,
@@ -893,9 +896,11 @@ async function handlePaymentIntentSucceeded(event: {
   });
 }
 
-async function handlePaymentIntentFailed(event: {
-  data: { object: { id: string } };
-}): Promise<void> {
+async function handlePaymentIntentFailed(event: Stripe.Event): Promise<void> {
+  if (event.type !== "payment_intent.payment_failed") {
+    return;
+  }
+
   const paymentIntent = event.data.object;
 
   // Update payment record
@@ -929,10 +934,13 @@ async function handlePaymentIntentFailed(event: {
   logger.info(`Payment failed: ${paymentIntent.id}`);
 }
 
-async function handleCheckoutSessionCompleted(event: {
-  id: string;
-  data: { object: { id: string; payment_intent?: string | object | null } };
-}): Promise<void> {
+async function handleCheckoutSessionCompleted(
+  event: Stripe.Event,
+): Promise<void> {
+  if (event.type !== "checkout.session.completed") {
+    return;
+  }
+
   const session = event.data.object;
   const eventId = event.id;
 
@@ -953,6 +961,16 @@ async function handleCheckoutSessionCompleted(event: {
     return; // ✅ Idempotent - safe to receive multiple times
   }
 
+  const paymentIntentId = extractPaymentIntentIdFromSession(session);
+  const financialDetails = await resolvePaymentFinancialDetails({
+    paymentIntentId,
+    fallbackCurrency: session.currency,
+    fallbackAmountMinor:
+      typeof session.amount_total === "number"
+        ? session.amount_total
+        : undefined,
+  });
+
   // ✅ STEP 2: Use transaction to prevent race conditions
   await prisma.$transaction(async (tx) => {
     // Update payment with idempotency tracking
@@ -962,9 +980,6 @@ async function handleCheckoutSessionCompleted(event: {
         id: true,
         projectId: true,
         status: true,
-        amount: true,
-        depositPercentage: true,
-        fullProjectAmount: true,
       },
     });
 
@@ -975,18 +990,10 @@ async function handleCheckoutSessionCompleted(event: {
 
     // Only update if not already succeeded
     if (payment.status !== "SUCCEEDED") {
-      // ✅ CRITICAL FIX: Extract payment intent ID from session
-      let paymentIntentId: string | null = null;
-      if (session.payment_intent) {
-        if (typeof session.payment_intent === "string") {
-          paymentIntentId = session.payment_intent;
-        } else if (
-          typeof session.payment_intent === "object" &&
-          "id" in session.payment_intent
-        ) {
-          paymentIntentId = (session.payment_intent as { id: string }).id;
-        }
-      }
+      const paymentIntentUpdate =
+        typeof paymentIntentId === "string"
+          ? { stripePaymentIntentId: paymentIntentId }
+          : {};
 
       await tx.payment.update({
         where: { id: payment.id },
@@ -995,67 +1002,21 @@ async function handleCheckoutSessionCompleted(event: {
           paidAt: new Date(),
           lastWebhookEventId: eventId,
           webhookEventsProcessed: {
-            push: eventId, // Add to array
+            push: eventId,
           },
           lastCheckedAt: new Date(),
-          ...(paymentIntentId && {
-            stripePaymentIntentId: paymentIntentId,
-          }),
+          ...paymentIntentUpdate,
+          ...buildFinancialUpdate(financialDetails),
         },
       });
 
-      // Update project payment status and cumulative tracking if this is a project payment
-      if (payment.projectId) {
-        // Get current project state and estimate
-        const project = await tx.project.findUnique({
-          where: { id: payment.projectId },
-          include: { estimate: true },
-        });
-
-        if (project && project.estimate) {
-          // Calculate payment amount in dollars
-          const paymentAmountInDollars = payment.amount / 100;
-
-          // Calculate new cumulative total
-          const currentTotalPaid = Number(project.totalAmountPaid || 0);
-          const newTotalPaid = currentTotalPaid + paymentAmountInDollars;
-
-          // Calculate completion percentage
-          const fullProjectAmount = Number(
-            project.estimate.calculatedTotal || 0,
-          );
-          const completionPercentage =
-            fullProjectAmount > 0
-              ? (newTotalPaid / fullProjectAmount) * 100
-              : 0;
-
-          // Determine payment status
-          // Set to SUCCEEDED on first payment if >= 25%, then keep it SUCCEEDED
-          const isFirstPayment = currentTotalPaid === 0;
-          let newPaymentStatus = project.paymentStatus;
-
-          if (isFirstPayment && completionPercentage >= 25) {
-            newPaymentStatus = "SUCCEEDED";
-          }
-
-          await tx.project.update({
-            where: { id: payment.projectId },
-            data: {
-              totalAmountPaid: newTotalPaid,
-              paymentCompletionPercentage: completionPercentage,
-              paymentStatus: newPaymentStatus,
-            },
-          });
-
-          logger.info(`Project payment updated: ${payment.projectId}`, {
-            paymentAmount: paymentAmountInDollars,
-            totalPaid: newTotalPaid,
-            fullAmount: fullProjectAmount,
-            completionPercentage: completionPercentage.toFixed(2),
-            paymentStatus: newPaymentStatus,
-            isFirstPayment,
-          });
-        }
+      if (payment.projectId && financialDetails.platformAmount > 0) {
+        await applyProjectPaymentProgress(
+          tx,
+          payment.projectId,
+          financialDetails.platformAmount,
+          "webhook",
+        );
       }
 
       // ✅ Log verification
@@ -1090,9 +1051,13 @@ async function handleCheckoutSessionCompleted(event: {
   });
 }
 
-async function handleCheckoutSessionExpired(event: {
-  data: { object: { id: string } };
-}): Promise<void> {
+async function handleCheckoutSessionExpired(
+  event: Stripe.Event,
+): Promise<void> {
+  if (event.type !== "checkout.session.expired") {
+    return;
+  }
+
   const session = event.data.object;
 
   // Update payment record
@@ -1124,4 +1089,364 @@ async function handleCheckoutSessionExpired(event: {
   }
 
   logger.info(`Checkout session expired: ${session.id}`);
+}
+
+/**
+ * Handle transfer.paid event - when freelancer payout completes
+ */
+async function handleTransferPaid(event: Stripe.Event): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const transfer = event.data.object as any;
+  const eventId = event.id;
+
+  try {
+    // Find the payout by stripeTransferId
+    const payout = await prisma.freelancerPayout.findUnique({
+      where: { stripeTransferId: transfer.id },
+    });
+
+    if (!payout) {
+      logger.warn(
+        `Payout not found for transfer ${transfer.id} in transfer.paid event`,
+      );
+      return;
+    }
+
+    // Update payout status to PAID
+    await prisma.freelancerPayout.update({
+      where: { id: payout.id },
+      data: {
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+
+    logger.info(
+      `Payout marked as PAID: ${payout.id} (transfer: ${transfer.id}) via webhook event ${eventId}`,
+    );
+  } catch (error) {
+    logger.error(`Error handling transfer.paid event:`, error);
+  }
+}
+
+/**
+ * Handle transfer.failed event - when freelancer payout fails
+ */
+async function handleTransferFailed(event: Stripe.Event): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const transfer = event.data.object as any;
+  const eventId = event.id;
+
+  try {
+    // Find the payout by stripeTransferId
+    const payout = await prisma.freelancerPayout.findUnique({
+      where: { stripeTransferId: transfer.id },
+    });
+
+    if (!payout) {
+      logger.warn(
+        `Payout not found for transfer ${transfer.id} in transfer.failed event`,
+      );
+      return;
+    }
+
+    // Update payout status to FAILED
+    await prisma.freelancerPayout.update({
+      where: { id: payout.id },
+      data: {
+        status: "FAILED",
+        failureReason: transfer.failure_message || "Transfer failed",
+        failureCode: transfer.failure_code || "transfer_failed",
+      },
+    });
+
+    logger.error(
+      `Payout marked as FAILED: ${payout.id} (transfer: ${transfer.id}) via webhook event ${eventId}`,
+      {
+        failureMessage: transfer.failure_message,
+        failureCode: transfer.failure_code,
+      },
+    );
+  } catch (error) {
+    logger.error(`Error handling transfer.failed event:`, error);
+  }
+}
+
+/**
+ * Handle transfer.reversed event - when a payout is reversed/refunded
+ */
+async function handleTransferReversed(event: Stripe.Event): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const transfer = event.data.object as any;
+  const eventId = event.id;
+
+  try {
+    // Find the payout by stripeTransferId
+    const payout = await prisma.freelancerPayout.findUnique({
+      where: { stripeTransferId: transfer.id },
+    });
+
+    if (!payout) {
+      logger.warn(
+        `Payout not found for transfer ${transfer.id} in transfer.reversed event`,
+      );
+      return;
+    }
+
+    // Update payout status to CANCELLED (reversed)
+    await prisma.freelancerPayout.update({
+      where: { id: payout.id },
+      data: {
+        status: "CANCELLED",
+        failureReason: "Transfer was reversed",
+        notes: `${payout.notes || ""}\n\nTransfer reversed via webhook event ${eventId}`,
+      },
+    });
+
+    logger.warn(
+      `Payout reversed: ${payout.id} (transfer: ${transfer.id}) via webhook event ${eventId}`,
+    );
+  } catch (error) {
+    logger.error(`Error handling transfer.reversed event:`, error);
+  }
+}
+
+interface PaymentFinancialDetails {
+  originalCurrency: string;
+  originalAmount: number;
+  platformCurrency: string;
+  platformAmount: number;
+  exchangeRate?: number;
+}
+
+type PaymentIntentWithCharges = Stripe.PaymentIntent & {
+  charges?: Stripe.ApiList<Stripe.Charge>;
+};
+
+function extractPaymentIntentIdFromSession(
+  session: Pick<Stripe.Checkout.Session, "payment_intent">,
+): string | null {
+  if (!session.payment_intent) {
+    return null;
+  }
+  if (typeof session.payment_intent === "string") {
+    return session.payment_intent;
+  }
+  if ("id" in session.payment_intent && session.payment_intent.id) {
+    return session.payment_intent.id;
+  }
+  return null;
+}
+
+function formatDecimalForCurrency(amount: number, currency: string): Decimal {
+  const zeroDecimal = CurrencyDetectionService.isZeroDecimal(currency);
+  const formatted = zeroDecimal
+    ? Math.round(amount).toString()
+    : amount.toFixed(2);
+  return new Decimal(formatted);
+}
+
+function buildFinancialUpdate(details: PaymentFinancialDetails) {
+  return {
+    originalCurrency: details.originalCurrency,
+    originalAmount: formatDecimalForCurrency(
+      details.originalAmount,
+      details.originalCurrency,
+    ),
+    platformCurrency: details.platformCurrency,
+    platformAmount: formatDecimalForCurrency(
+      details.platformAmount,
+      details.platformCurrency,
+    ),
+    ...(typeof details.exchangeRate === "number" && details.exchangeRate > 0
+      ? {
+          exchangeRate: new Decimal(details.exchangeRate.toFixed(6)),
+        }
+      : {}),
+  };
+}
+
+async function resolvePaymentFinancialDetails(params: {
+  paymentIntentId?: string | null;
+  fallbackCurrency?: string | null;
+  fallbackAmountMinor?: number;
+}): Promise<PaymentFinancialDetails> {
+  let currency =
+    CurrencyDetectionService.normalizeCurrency(params.fallbackCurrency) ||
+    PLATFORM_CURRENCY;
+  let amountMinor =
+    typeof params.fallbackAmountMinor === "number"
+      ? params.fallbackAmountMinor
+      : 0;
+  let balanceTransaction: Stripe.BalanceTransaction | null = null;
+
+  try {
+    if (params.paymentIntentId) {
+      const paymentIntent = await StripeService.getPaymentIntentWithBalance(
+        params.paymentIntentId,
+      );
+      if (paymentIntent.currency) {
+        currency =
+          CurrencyDetectionService.normalizeCurrency(paymentIntent.currency) ||
+          currency;
+      }
+      if (typeof paymentIntent.amount_received === "number") {
+        amountMinor = paymentIntent.amount_received;
+      } else if (typeof paymentIntent.amount === "number") {
+        amountMinor = paymentIntent.amount;
+      }
+      const latestCharge = extractLatestCharge(
+        paymentIntent as PaymentIntentWithCharges,
+      );
+      balanceTransaction = await fetchBalanceTransaction(latestCharge);
+    }
+  } catch (error) {
+    logger.warn("Unable to fetch payment intent financial data", {
+      paymentIntentId: params.paymentIntentId,
+      error,
+    });
+  }
+
+  if (amountMinor <= 0) {
+    amountMinor =
+      typeof params.fallbackAmountMinor === "number"
+        ? params.fallbackAmountMinor
+        : 0;
+  }
+
+  if (amountMinor <= 0) {
+    throw new Error("Unable to determine payment amount in minor units");
+  }
+
+  const originalCurrency = currency;
+  const originalAmount = CurrencyDetectionService.convertFromMinorUnits(
+    amountMinor,
+    originalCurrency,
+  );
+
+  const platformCurrency =
+    CurrencyDetectionService.normalizeCurrency(balanceTransaction?.currency) ||
+    PLATFORM_CURRENCY;
+
+  let platformAmount: number;
+  let exchangeRate =
+    balanceTransaction?.exchange_rate && balanceTransaction.exchange_rate > 0
+      ? balanceTransaction.exchange_rate
+      : undefined;
+
+  if (balanceTransaction) {
+    platformAmount = CurrencyDetectionService.convertFromMinorUnits(
+      balanceTransaction.amount,
+      platformCurrency,
+    );
+    if (!exchangeRate && originalAmount > 0) {
+      exchangeRate = platformAmount / originalAmount;
+    }
+  } else if (originalCurrency === platformCurrency) {
+    platformAmount = originalAmount;
+    exchangeRate = 1;
+  } else {
+    logger.warn("Missing balance transaction for FX conversion", {
+      originalCurrency,
+      platformCurrency,
+    });
+    platformAmount = originalAmount;
+  }
+
+  return {
+    originalCurrency,
+    originalAmount,
+    platformCurrency,
+    platformAmount,
+    exchangeRate,
+  };
+}
+
+function extractLatestCharge(
+  paymentIntent: PaymentIntentWithCharges,
+): Stripe.Charge | null {
+  if (
+    paymentIntent.latest_charge &&
+    typeof paymentIntent.latest_charge !== "string"
+  ) {
+    return paymentIntent.latest_charge;
+  }
+
+  const chargesList = paymentIntent.charges;
+  if (chargesList && chargesList.data.length > 0) {
+    const lastCharge = chargesList.data[chargesList.data.length - 1];
+    return lastCharge ?? null;
+  }
+
+  return null;
+}
+
+async function fetchBalanceTransaction(
+  charge: Stripe.Charge | null,
+): Promise<Stripe.BalanceTransaction | null> {
+  if (!charge || !charge.balance_transaction) {
+    return null;
+  }
+
+  if (typeof charge.balance_transaction !== "string") {
+    return charge.balance_transaction;
+  }
+
+  try {
+    return await StripeService.getBalanceTransaction(
+      charge.balance_transaction,
+    );
+  } catch (error) {
+    logger.warn("Failed to fetch balance transaction", {
+      chargeId: charge.id,
+      error,
+    });
+    return null;
+  }
+}
+
+async function applyProjectPaymentProgress(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  amountInPlatformCurrency: number,
+  source: "webhook" | "api_check",
+): Promise<void> {
+  const project = await tx.project.findUnique({
+    where: { id: projectId },
+    include: { estimate: true },
+  });
+
+  if (!project || !project.estimate) {
+    return;
+  }
+
+  const currentTotalPaid = Number(project.totalAmountPaid || 0);
+  const newTotalPaid = currentTotalPaid + amountInPlatformCurrency;
+  const fullProjectAmount = Number(project.estimate.calculatedTotal || 0);
+  const completionPercentage =
+    fullProjectAmount > 0 ? (newTotalPaid / fullProjectAmount) * 100 : 0;
+  const isFirstPayment = currentTotalPaid === 0;
+  let newPaymentStatus = project.paymentStatus;
+
+  if (isFirstPayment && completionPercentage >= 25) {
+    newPaymentStatus = "SUCCEEDED";
+  }
+
+  await tx.project.update({
+    where: { id: projectId },
+    data: {
+      totalAmountPaid: newTotalPaid,
+      paymentCompletionPercentage: completionPercentage,
+      paymentStatus: newPaymentStatus,
+    },
+  });
+
+  logger.info(`Project payment updated via ${source}: ${projectId}`, {
+    paymentAmount: amountInPlatformCurrency,
+    totalPaid: newTotalPaid,
+    fullAmount: fullProjectAmount,
+    completionPercentage: completionPercentage.toFixed(2),
+    paymentStatus: newPaymentStatus,
+    isFirstPayment,
+  });
 }

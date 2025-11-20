@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import ProjectPaymentService from "../../services/projectPaymentService";
+import CurrencyDetectionService from "../../services/currencyDetectionService";
 import logger from "../../utils/loggerUtils";
 
 interface AuthenticatedRequest extends Request {
@@ -59,7 +60,11 @@ export class ProjectPaymentController {
       const { db } = await import("../../database/db");
       const project = await db.project.findUnique({
         where: { id: projectId },
-        select: { clientId: true, paymentStatus: true },
+        select: {
+          clientId: true,
+          paymentStatus: true,
+          preferredCurrency: true,
+        },
       });
 
       if (!project) {
@@ -82,13 +87,51 @@ export class ProjectPaymentController {
       // SUCCEEDED now means "at least 25% paid", not "fully paid"
       // Clients can make additional payments to reach 100% or beyond
 
+      // Determine best currency option
+      let clientCurrency =
+        CurrencyDetectionService.normalizeCurrency(currency)?.toLowerCase() ??
+        CurrencyDetectionService.normalizeCurrency(
+          project.preferredCurrency,
+        )?.toLowerCase() ??
+        undefined;
+
+      if (!clientCurrency) {
+        const headerCountry =
+          (req.headers["cf-ipcountry"] as string) ||
+          (req.headers["x-country-code"] as string) ||
+          (req.headers["cloudfront-viewer-country"] as string);
+        if (headerCountry) {
+          clientCurrency =
+            CurrencyDetectionService.getCurrencyForCountry(headerCountry);
+        }
+      }
+
+      if (!clientCurrency) {
+        clientCurrency = await CurrencyDetectionService.getCurrencyFromIP(
+          req.ip || req.socket.remoteAddress,
+        );
+      }
+
+      clientCurrency =
+        CurrencyDetectionService.normalizeCurrency(clientCurrency) || "usd";
+
+      if (
+        project.preferredCurrency?.toLowerCase() !==
+        clientCurrency.toLowerCase()
+      ) {
+        await db.project.update({
+          where: { id: projectId },
+          data: { preferredCurrency: clientCurrency.toLowerCase() },
+        });
+      }
+
       // Create checkout session
       const checkoutSession =
         await ProjectPaymentService.createProjectCheckoutSession({
           projectId,
           successUrl,
           cancelUrl,
-          currency: currency || "usd",
+          currency: clientCurrency,
           depositPercentage,
           customAmount,
         });

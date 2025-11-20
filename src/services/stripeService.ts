@@ -72,8 +72,7 @@ export class StripeService {
     data: CreateCheckoutSessionData,
   ): Promise<Stripe.Checkout.Session> {
     try {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         line_items: [
           {
             price_data: {
@@ -93,7 +92,9 @@ export class StripeService {
           ...data.metadata,
           customer_email: data.customerEmail,
         },
-      });
+      };
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       return session;
     } catch (error) {
@@ -278,6 +279,7 @@ export class StripeService {
         email,
         country,
         capabilities: {
+          card_payments: { requested: true },
           transfers: { requested: true },
         },
       });
@@ -498,6 +500,117 @@ export class StripeService {
     }
 
     return `https://connect.stripe.com/oauth/authorize?${queryParams.toString()}`;
+  }
+
+  /**
+   * Retrieve a payment intent with expanded balance transaction data
+   */
+  static async getPaymentIntentWithBalance(
+    paymentIntentId: string,
+  ): Promise<Stripe.PaymentIntent> {
+    try {
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        paymentIntentId,
+        {
+          expand: ["latest_charge.balance_transaction"],
+        },
+      );
+      return paymentIntent;
+    } catch (error) {
+      console.error("Error retrieving payment intent with balance:", error);
+      throw new Error("Failed to retrieve payment intent with balance data");
+    }
+  }
+
+  /**
+   * Retrieve a balance transaction (used for FX + settlement details)
+   */
+  static async getBalanceTransaction(
+    balanceTransactionId: string,
+  ): Promise<Stripe.BalanceTransaction> {
+    try {
+      const balanceTransaction =
+        await stripe.balanceTransactions.retrieve(balanceTransactionId);
+      return balanceTransaction;
+    } catch (error) {
+      console.error("Error retrieving balance transaction:", error);
+      throw new Error("Failed to retrieve balance transaction");
+    }
+  }
+
+  /**
+   * List supported countries for Connect onboarding along with their default currencies
+   */
+  static async listSupportedConnectCountries(): Promise<
+    Array<{
+      code: string;
+      defaultCurrency: string;
+      supportedPayoutCurrencies: string[];
+    }>
+  > {
+    try {
+      const supported: Array<{
+        code: string;
+        defaultCurrency: string;
+        supportedPayoutCurrencies: string[];
+      }> = [];
+
+      let lastId: string | undefined;
+      // Country specs are < 100 entries but loop defensively
+      do {
+        const response = await stripe.countrySpecs.list({
+          limit: 100,
+          starting_after: lastId,
+        });
+
+        response.data.forEach((spec) => {
+          const supportedBankCurrencies =
+            spec.supported_bank_account_currencies || {};
+          const payoutCurrencies = Object.keys(supportedBankCurrencies);
+
+          supported.push({
+            code: spec.id.toUpperCase(),
+            defaultCurrency: spec.default_currency,
+            supportedPayoutCurrencies:
+              payoutCurrencies.length > 0
+                ? payoutCurrencies
+                : [spec.default_currency],
+          });
+        });
+
+        if (response.has_more && response.data.length > 0) {
+          lastId = response.data[response.data.length - 1]?.id;
+        } else {
+          lastId = undefined;
+        }
+      } while (lastId);
+
+      return supported;
+    } catch (error) {
+      console.error("Error listing supported countries:", error);
+      throw new Error("Failed to list supported countries");
+    }
+  }
+
+  /**
+   * Find the Checkout Session associated with a payment intent
+   */
+  static async findCheckoutSessionByPaymentIntent(
+    paymentIntentId: string,
+  ): Promise<Stripe.Checkout.Session | null> {
+    try {
+      const sessions = await stripe.checkout.sessions.list({
+        payment_intent: paymentIntentId,
+        limit: 1,
+      });
+      return sessions.data[0] ?? null;
+    } catch (error) {
+      console.error(
+        "Error finding checkout session for payment intent:",
+        error,
+      );
+      throw new Error("Failed to find checkout session");
+    }
   }
 }
 

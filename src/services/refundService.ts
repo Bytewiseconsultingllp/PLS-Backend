@@ -3,6 +3,8 @@ import { db } from "../database/db";
 import { Decimal } from "@prisma/client/runtime/library";
 import Stripe from "stripe";
 import { STRIPE_SECRET_KEY } from "../config/config";
+import CurrencyDetectionService from "./currencyDetectionService";
+import { PLATFORM_CURRENCY } from "../constants/currency";
 import logger from "../utils/loggerUtils";
 
 // Initialize Stripe with secret key
@@ -72,9 +74,24 @@ export class RefundService {
       }
 
       // Step 2: Validate refund amount
-      const paymentAmountInDollars = payment.amount / 100;
+      const platformCurrency = payment.platformCurrency || PLATFORM_CURRENCY;
+      let paymentAmountInPlatform = Number(payment.platformAmount || 0);
+      let paymentAmountDisplay = paymentAmountInPlatform;
+
+      if (
+        paymentAmountInPlatform === 0 &&
+        payment.currency === platformCurrency
+      ) {
+        paymentAmountInPlatform =
+          CurrencyDetectionService.convertFromMinorUnits(
+            payment.amount,
+            payment.currency,
+          );
+        paymentAmountDisplay = paymentAmountInPlatform;
+      }
+
       const alreadyRefunded = Number(payment.totalRefundedAmount || 0);
-      const availableToRefund = paymentAmountInDollars - alreadyRefunded;
+      const availableToRefund = paymentAmountInPlatform - alreadyRefunded;
 
       // Validate amount is positive
       if (amount <= 0) {
@@ -90,7 +107,7 @@ export class RefundService {
       if (availableToRefund <= 0) {
         throw new Error(
           `This payment has already been fully refunded. ` +
-            `Payment amount: $${paymentAmountInDollars}, Already refunded: $${alreadyRefunded}`,
+            `Payment amount: $${paymentAmountInPlatform}, Already refunded: $${alreadyRefunded}`,
         );
       }
 
@@ -98,7 +115,7 @@ export class RefundService {
       if (amount > availableToRefund) {
         throw new Error(
           `Refund amount ($${amount}) exceeds available amount ($${availableToRefund.toFixed(2)}). ` +
-            `Payment total: $${paymentAmountInDollars}, Already refunded: $${alreadyRefunded}`,
+            `Payment total: $${paymentAmountInPlatform}, Already refunded: $${alreadyRefunded}`,
         );
       }
 
@@ -234,7 +251,7 @@ export class RefundService {
           clientEmail: payment.user.email,
           clientName: payment.clientName || payment.user.fullName,
           refundAmount: amount,
-          paymentAmount: paymentAmountInDollars,
+          paymentAmount: paymentAmountDisplay,
           projectId: payment.projectId,
           reason,
         }).catch((error) => {

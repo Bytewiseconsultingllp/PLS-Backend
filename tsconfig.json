@@ -106,7 +106,7 @@
     "exactOptionalPropertyTypes": false, // Temporarily disabled to allow undefined to be assigned to nullable fields
     "useUnknownInCatchVariables": true // Enforces
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
   "exclude": [
     "node_modules",
     "dist",

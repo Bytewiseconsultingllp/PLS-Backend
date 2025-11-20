@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import StripeService from "../../services/stripeService";
+import CurrencyDetectionService from "../../services/currencyDetectionService";
 import logger from "../../utils/loggerUtils";
 import {
   STRIPE_CONNECT_CLIENT_ID,
@@ -66,6 +67,7 @@ export class FreelancerStripeConnectController {
             select: {
               email: true,
               fullName: true,
+              country: true,
             },
           },
         },
@@ -95,6 +97,31 @@ export class FreelancerStripeConnectController {
         return;
       }
 
+      const requestedCountryParam =
+        (req.query.country as string | undefined) ||
+        freelancer.details?.country ||
+        "US";
+      const normalizedCountry =
+        CurrencyDetectionService.normalizeCountry(requestedCountryParam) ||
+        "US";
+
+      const supportedCountries =
+        await StripeService.listSupportedConnectCountries();
+      const supportedCountryCodes = new Set(
+        supportedCountries.map((country) => country.code),
+      );
+
+      if (!supportedCountryCodes.has(normalizedCountry)) {
+        res.status(400).json({
+          success: false,
+          message: `Country ${normalizedCountry} is not supported for Stripe Connect onboarding`,
+          data: {
+            supportedCountries,
+          },
+        });
+        return;
+      }
+
       // Generate secure state token
       const state = crypto.randomBytes(32).toString("hex");
 
@@ -110,7 +137,7 @@ export class FreelancerStripeConnectController {
         redirectUri: `${BACKEND_URL}/api/v1/freelancer/stripe-connect-callback`,
         state,
         userEmail: freelancer.details?.email,
-        userCountry: "US", // Can be made dynamic based on freelancer's country
+        userCountry: normalizedCountry,
       });
 
       logger.info(
@@ -416,6 +443,31 @@ export class FreelancerStripeConnectController {
       res.status(500).json({
         success: false,
         message: "Failed to get Stripe Connect status",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * List supported Stripe Connect countries
+   * GET /api/v1/freelancer/stripe-connect-supported-countries
+   */
+  static async listSupportedCountries(
+    _req: AuthenticatedRequest,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const countries = await StripeService.listSupportedConnectCountries();
+      res.status(200).json({
+        success: true,
+        message: "Supported countries retrieved",
+        data: countries,
+      });
+    } catch (error) {
+      logger.error("Error listing Stripe Connect countries:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to retrieve supported countries",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }

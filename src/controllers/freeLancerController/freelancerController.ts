@@ -8,6 +8,7 @@ import freelancerService from "../../services/freelancerService";
 import {
   FreelancerRegistrationSchema,
   CreateFreelancerBidSchema,
+  GetBidsQuerySchema,
 } from "../../validation/freelancerValidation";
 import { sendFreelancerRegistrationEmail } from "../../services/globalMailService";
 
@@ -371,10 +372,13 @@ export const getMyBids = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const bids = await freelancerService.getFreelancerBids(freelancer.id, {
-      page: 1,
-      limit: 100,
-    });
+    // Parse query parameters (status, page, limit)
+    const query = GetBidsQuerySchema.parse(req.query);
+
+    const bids = await freelancerService.getFreelancerBids(
+      freelancer.id,
+      query,
+    );
 
     res.status(200).json({
       success: true,
@@ -382,6 +386,16 @@ export const getMyBids = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error: any) {
     console.error("Error in getMyBids:", error);
+
+    if (error.name === "ZodError") {
+      res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: error.errors,
+      });
+      return;
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || "Failed to fetch bids",

@@ -259,8 +259,13 @@ model Payment {
   stripeCustomerId      String?
 
   // Payment details
-  amount        Int // Amount in cents
-  currency      String        @default("usd")
+  amount           Int // Amount captured in the original currency's smallest unit
+  currency         String        @default("usd") // ISO currency passed to Stripe
+  originalCurrency String?       // Snapshot of the payer's currency at charge time
+  originalAmount   Decimal?      @db.Decimal(12, 2) // Amount in original currency (major unit)
+  platformCurrency String        @default("usd") // Platform/base currency used for reporting
+  platformAmount   Decimal?      @db.Decimal(12, 2) // Amount converted to platform currency
+  exchangeRate     Decimal?      @db.Decimal(12, 6) // FX rate applied by Stripe (original -> platform)
   status        PaymentStatus @default(PENDING)
   paymentMethod PaymentMethod @default(CARD)
 
@@ -414,8 +419,12 @@ model FreelancerPayout {
   admin       User   @relation(fields: [initiatedBy], references: [uid])
 
   // Payout details
-  amount      Decimal     @db.Decimal(10, 2) // Amount in dollars
-  currency    String      @default("usd")
+  amount             Decimal     @db.Decimal(10, 2) // Amount requested (major unit)
+  currency           String      @default("usd") // Currency platform debits to fund the transfer
+  freelancerCurrency String? // Destination currency (falls back to Stripe account default)
+  platformCurrency   String      @default("usd")
+  platformAmount     Decimal?    @db.Decimal(12, 2) // Amount debited from platform balance
+  exchangeRate       Decimal?    @db.Decimal(12, 6) // FX rate applied by Stripe for platform debit
   status      PayoutStatus @default(PENDING)
   payoutType  PayoutType  @default(MANUAL)
   
@@ -897,6 +906,7 @@ model Project {
   paymentStatus               PaymentStatus @default(PENDING)
   totalAmountPaid             Decimal?      @default(0) @db.Decimal(10, 2) // Cumulative sum of all successful payments (in dollars)
   paymentCompletionPercentage Decimal?      @default(0) @db.Decimal(5, 2)  // 0.00 to 100.00+ (percentage of project paid)
+  preferredCurrency           String?       @default("usd") // Client's preferred payment currency
   
   // Refund tracking
   totalRefunded               Decimal?      @default(0) @db.Decimal(10, 2) // Sum of all refunds (in dollars)
