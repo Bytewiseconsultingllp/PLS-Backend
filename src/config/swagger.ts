@@ -706,6 +706,11 @@ const swaggerDefinition = {
       description:
         "Admin endpoints for listing and managing all payments (Admin only)",
     },
+    {
+      name: "Reference Data",
+      description:
+        "Public endpoints for retrieving reference data (enums) such as service categories, industry categories, technology categories, and feature categories. Used by frontend for populating dropdowns and form selectors.",
+    },
   ],
 };
 

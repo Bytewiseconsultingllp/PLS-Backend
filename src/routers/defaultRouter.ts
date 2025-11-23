@@ -24,6 +24,7 @@ import paymentAgreementRouter from "./paymentAgreementRouter/paymentAgreementRou
 import kpiRouter from "./kpiRouter/kpiRouter";
 import pricingRouter from "./pricingRouter/pricingRouter";
 import adminRouter from "./adminRouter/adminRouter";
+import referenceDataRouter from "./referenceDataRouter";
 
 // OLD - Uses deprecated CreateServicesForQuote model
 // import { getQuoteRouter } from "./getQuoteRouter/getQuoteRouter";
@@ -52,7 +53,8 @@ defaultRouter.use(endpoint.TRASHROUTE, trashRouter);
 
 // ** Navigation Pages Router
 defaultRouter.use(endpoint.NAVIGATIONPAGESROUTE, navigationPagesRouter);
-
+// ** Reference Data Router (Public - Provides all enum values for frontend)
+defaultRouter.use(endpoint.REFERENCEDATAROUTE, referenceDataRouter);
 // ** Get Quotes Router (OLD - DEPRECATED - Uses removed CreateServicesForQuote model)
 // defaultRouter.use(endpoint.GETQUOTESROUTE, getQuoteRouter);
 

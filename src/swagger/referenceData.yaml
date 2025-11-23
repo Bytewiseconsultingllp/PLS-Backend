@@ -1,0 +1,508 @@
+paths:
+  /reference-data/:
+    get:
+      tags:
+        - Reference Data
+      summary: Get all reference data
+      description: |
+        Returns all enum values for ServiceCategory, IndustryCategory with SubIndustries, TechnologyCategory with Technologies, and FeatureCategory with Features.
+        This endpoint is optimized for frontend to fetch all reference data in a single call during app initialization.
+
+        **Rate Limit:** 50 requests per 5 minutes
+      responses:
+        "200":
+          description: Reference data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 200
+                  message:
+                    type: string
+                    example: Reference data retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      serviceCategories:
+                        type: array
+                        description: Available service categories
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: SOFTWARE_DEVELOPMENT
+                              description: Enum value for database
+                            label:
+                              type: string
+                              example: Software Development
+                              description: Human-readable label
+                            description:
+                              type: string
+                              example: Custom software solutions and applications
+                              description: Category description
+                      industryCategories:
+                        type: array
+                        description: Available industry categories with sub-industries
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: HEALTHCARE_AND_LIFE_SCIENCES
+                              description: Enum value for database
+                            label:
+                              type: string
+                              example: Healthcare & Life Sciences
+                              description: Human-readable label
+                            subIndustries:
+                              type: array
+                              description: Sub-industries under this category
+                              items:
+                                type: object
+                                properties:
+                                  value:
+                                    type: string
+                                    example: HEALTHCARE_PROVIDERS
+                                    description: Enum value for database
+                                  label:
+                                    type: string
+                                    example: Healthcare Providers
+                                    description: Human-readable label
+                      technologyCategories:
+                        type: array
+                        description: Available technology categories with specific technologies
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: FRONTEND
+                              description: Enum value for database
+                            label:
+                              type: string
+                              example: Frontend
+                              description: Human-readable label
+                            technologies:
+                              type: array
+                              description: Technologies under this category
+                              items:
+                                type: object
+                                properties:
+                                  value:
+                                    type: string
+                                    example: REACT
+                                    description: Enum value for database
+                                  label:
+                                    type: string
+                                    example: React
+                                    description: Human-readable label
+                      featureCategories:
+                        type: array
+                        description: Available feature categories with specific features
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: USER_MANAGEMENT
+                              description: Enum value for database
+                            label:
+                              type: string
+                              example: User Management
+                              description: Human-readable label
+                            features:
+                              type: array
+                              description: Features under this category
+                              items:
+                                type: object
+                                properties:
+                                  value:
+                                    type: string
+                                    example: AUTHENTICATION
+                                    description: Enum value for database
+                                  label:
+                                    type: string
+                                    example: Authentication
+                                    description: Human-readable label
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 429
+                message: Too many requests. Please try again in a few minutes.
+                data: null
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /reference-data/service-categories:
+    get:
+      tags:
+        - Reference Data
+      summary: Get service categories only
+      description: |
+        Returns only the service categories. Use this endpoint if you only need service categories
+        instead of fetching all reference data.
+
+        **Rate Limit:** 50 requests per 5 minutes
+      responses:
+        "200":
+          description: Service categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 200
+                  message:
+                    type: string
+                    example: Service categories retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          enum:
+                            - SOFTWARE_DEVELOPMENT
+                            - DATA_AND_ANALYTICS
+                            - CLOUD_AND_DEVOPS
+                            - EMERGING_TECHNOLOGIES
+                            - CREATIVE_AND_DESIGN
+                            - DIGITAL_MARKETING
+                          example: SOFTWARE_DEVELOPMENT
+                        label:
+                          type: string
+                          example: Software Development
+                        description:
+                          type: string
+                          example: Custom software solutions and applications
+              examples:
+                success:
+                  value:
+                    status: 200
+                    message: Service categories retrieved successfully
+                    data:
+                      - value: SOFTWARE_DEVELOPMENT
+                        label: Software Development
+                        description: Custom software solutions and applications
+                      - value: DATA_AND_ANALYTICS
+                        label: Data & Analytics
+                        description: Data processing, analytics, and business intelligence
+                      - value: CLOUD_AND_DEVOPS
+                        label: Cloud & DevOps
+                        description: Cloud infrastructure and DevOps solutions
+                      - value: EMERGING_TECHNOLOGIES
+                        label: Emerging Technologies
+                        description: AI, ML, IoT, and cutting-edge technologies
+                      - value: CREATIVE_AND_DESIGN
+                        label: Creative & Design
+                        description: UI/UX design and creative services
+                      - value: DIGITAL_MARKETING
+                        label: Digital Marketing
+                        description: Digital marketing and online presence solutions
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /reference-data/industry-categories:
+    get:
+      tags:
+        - Reference Data
+      summary: Get industry categories with sub-industries
+      description: |
+        Returns industry categories with their associated sub-industries.
+        Each industry category contains an array of sub-industries that belong to it.
+
+        **Rate Limit:** 50 requests per 5 minutes
+      responses:
+        "200":
+          description: Industry categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 200
+                  message:
+                    type: string
+                    example: Industry categories retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          enum:
+                            - HEALTHCARE_AND_LIFE_SCIENCES
+                            - FINANCIAL_SERVICES
+                            - RETAIL_AND_ECOMMERCE
+                            - MANUFACTURING
+                            - EDUCATION
+                            - GOVERNMENT_AND_PUBLIC_SECTOR
+                          example: HEALTHCARE_AND_LIFE_SCIENCES
+                        label:
+                          type: string
+                          example: Healthcare & Life Sciences
+                        subIndustries:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              value:
+                                type: string
+                                example: HEALTHCARE_PROVIDERS
+                              label:
+                                type: string
+                                example: Healthcare Providers
+              examples:
+                success:
+                  value:
+                    status: 200
+                    message: Industry categories retrieved successfully
+                    data:
+                      - value: HEALTHCARE_AND_LIFE_SCIENCES
+                        label: Healthcare & Life Sciences
+                        subIndustries:
+                          - value: HEALTHCARE_PROVIDERS
+                            label: Healthcare Providers
+                          - value: PHARMACEUTICALS
+                            label: Pharmaceuticals
+                          - value: MEDICAL_DEVICES
+                            label: Medical Devices
+                          - value: BIOTECHNOLOGY
+                            label: Biotechnology
+                          - value: HEALTH_INSURANCE
+                            label: Health Insurance
+                      - value: FINANCIAL_SERVICES
+                        label: Financial Services
+                        subIndustries:
+                          - value: BANKING
+                            label: Banking
+                          - value: INSURANCE
+                            label: Insurance
+                          - value: INVESTMENT_MANAGEMENT
+                            label: Investment Management
+                          - value: PAYMENTS
+                            label: Payments
+                          - value: LENDING
+                            label: Lending
+                          - value: BLOCKCHAIN_AND_CRYPTO
+                            label: Blockchain & Crypto
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /reference-data/technology-categories:
+    get:
+      tags:
+        - Reference Data
+      summary: Get technology categories with technologies
+      description: |
+        Returns technology categories with their associated technology items.
+        Each technology category contains an array of specific technologies that belong to it.
+
+        Categories include: Frontend, Backend, Database, AI & Data Science, DevOps & Infrastructure, Mobile
+
+        **Rate Limit:** 50 requests per 5 minutes
+      responses:
+        "200":
+          description: Technology categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 200
+                  message:
+                    type: string
+                    example: Technology categories retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          enum:
+                            - FRONTEND
+                            - BACKEND
+                            - DATABASE
+                            - AI_AND_DATA_SCIENCE
+                            - DEVOPS_AND_INFRASTRUCTURE
+                            - MOBILE
+                          example: FRONTEND
+                        label:
+                          type: string
+                          example: Frontend
+                        technologies:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              value:
+                                type: string
+                                example: REACT
+                              label:
+                                type: string
+                                example: React
+              examples:
+                success:
+                  value:
+                    status: 200
+                    message: Technology categories retrieved successfully
+                    data:
+                      - value: FRONTEND
+                        label: Frontend
+                        technologies:
+                          - value: REACT
+                            label: React
+                          - value: ANGULAR
+                            label: Angular
+                          - value: VUE_JS
+                            label: Vue.js
+                          - value: NEXT_JS
+                            label: Next.js
+                          - value: SVELTE
+                            label: Svelte
+                          - value: JQUERY
+                            label: jQuery
+                      - value: BACKEND
+                        label: Backend
+                        technologies:
+                          - value: NODE_JS
+                            label: Node.js
+                          - value: PYTHON_DJANGO
+                            label: Python/Django
+                          - value: JAVA_SPRING
+                            label: Java/Spring
+                          - value: PHP_LARAVEL
+                            label: PHP/Laravel
+                          - value: RUBY_ON_RAILS
+                            label: Ruby on Rails
+                          - value: DOTNET_CORE
+                            label: .NET Core
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /reference-data/feature-categories:
+    get:
+      tags:
+        - Reference Data
+      summary: Get feature categories with features
+      description: |
+        Returns feature categories with their associated feature items.
+        Each feature category contains an array of specific features that belong to it.
+
+        Categories include: User Management, Content Management, E-commerce, Analytics & Reporting, Communication, Integration & API
+
+        **Rate Limit:** 50 requests per 5 minutes
+      responses:
+        "200":
+          description: Feature categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 200
+                  message:
+                    type: string
+                    example: Feature categories retrieved successfully
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                          enum:
+                            - USER_MANAGEMENT
+                            - CONTENT_MANAGEMENT
+                            - ECOMMERCE
+                            - ANALYTICS_AND_REPORTING
+                            - COMMUNICATION
+                            - INTEGRATION_AND_API
+                          example: USER_MANAGEMENT
+                        label:
+                          type: string
+                          example: User Management
+                        features:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              value:
+                                type: string
+                                example: AUTHENTICATION
+                              label:
+                                type: string
+                                example: Authentication
+              examples:
+                success:
+                  value:
+                    status: 200
+                    message: Feature categories retrieved successfully
+                    data:
+                      - value: USER_MANAGEMENT
+                        label: User Management
+                        features:
+                          - value: AUTHENTICATION
+                            label: Authentication
+                          - value: ROLE_BASED_ACCESS_CONTROL
+                            label: Role-based Access Control
+                          - value: USER_PROFILES
+                            label: User Profiles
+                          - value: SOCIAL_LOGIN
+                            label: Social Login
+                      - value: CONTENT_MANAGEMENT
+                        label: Content Management
+                        features:
+                          - value: RICH_TEXT_EDITOR
+                            label: Rich Text Editor
+                          - value: MEDIA_LIBRARY
+                            label: Media Library
+                          - value: CONTENT_VERSIONING
+                            label: Content Versioning
+                          - value: CONTENT_SCHEDULING
+                            label: Content Scheduling
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
