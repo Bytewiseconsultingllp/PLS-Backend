@@ -1350,6 +1350,7 @@ export const getFreelancerByUserId = async (userId: string) => {
       softSkills: true,
       certifications: true,
       projectBidding: true,
+      legalAgreements: true,
     },
   });
 
