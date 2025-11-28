@@ -94,13 +94,13 @@ interface FreelancerRegistrationData {
       id: string;
       accepted: boolean;
     }[];
-    identityVerification: {
-      idType: string;
-      taxDocType: string;
-      addressVerified: boolean;
+    identityVerification?: {
+      idType?: string;
+      taxDocType?: string;
+      addressVerified?: boolean;
     };
-    workAuthorization: {
-      interested: boolean;
+    workAuthorization?: {
+      interested?: boolean;
     };
   };
 }
@@ -148,26 +148,34 @@ const freelancerRegistrationController = {
     const userId = (req as _Request).userFromToken?.uid ?? null;
 
     // Prepare legalAgreements create input
+    const identityVerificationInput =
+      freelancerData.legalAgreements.identityVerification;
+    const shouldCreateIdentityVerification = !!(
+      identityVerificationInput &&
+      identityVerificationInput.idType &&
+      identityVerificationInput.taxDocType
+    );
+
     const legalAgreementsCreate: Prisma.LegalAgreementsCreateNestedOneWithoutProfileInput =
       {
         create: {
           agreements: (freelancerData.legalAgreements.agreements ||
             []) as Prisma.InputJsonValue,
-          identityVerification: {
-            create: {
-              idType:
-                freelancerData.legalAgreements.identityVerification.idType,
-              taxDocType:
-                freelancerData.legalAgreements.identityVerification.taxDocType,
-              addressVerified:
-                freelancerData.legalAgreements.identityVerification
-                  .addressVerified,
-            },
-          },
+          identityVerification: shouldCreateIdentityVerification
+            ? {
+                create: {
+                  idType: identityVerificationInput.idType,
+                  taxDocType: identityVerificationInput.taxDocType,
+                  addressVerified:
+                    identityVerificationInput.addressVerified ?? false,
+                },
+              }
+            : undefined,
           workAuthorization: {
             create: {
               interested:
-                freelancerData.legalAgreements.workAuthorization.interested,
+                freelancerData.legalAgreements.workAuthorization?.interested ??
+                false,
             },
           },
         },

@@ -2,6 +2,7 @@ import { Router } from "express";
 import freelancerController from "../../controllers/freeLancerController/freelancerController";
 import authMiddleware from "../../middlewares/authMiddleware";
 import rateLimiterMiddleware from "../../middlewares/rateLimiterMiddleware";
+import { freelancerDocumentUploader } from "../../middlewares/multerMiddleware";
 
 const router = Router();
 
@@ -28,6 +29,28 @@ router.post(
       "freelancer_accept_agreement",
     ),
   freelancerController.acceptPlatformAgreement,
+);
+
+/**
+ * @route   POST /api/freelancer/registration-documents/upload
+ * @desc    Upload identity/tax/address PDFs for registration
+ * @access  Public
+ */
+router.post(
+  "/registration-documents/upload",
+  (req, res, next) =>
+    rateLimiterMiddleware.handle(
+      req,
+      res,
+      next,
+      1,
+      "Too many document upload attempts. Please try again in 15 minutes.",
+      5,
+      900,
+      "freelancer_registration_documents",
+    ),
+  freelancerDocumentUploader,
+  freelancerController.uploadRegistrationDocument,
 );
 
 /**

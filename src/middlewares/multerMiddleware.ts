@@ -49,3 +49,4 @@ const upload = multer({
 });
 
 export const fileUploader = upload.array("docs", 5);
+export const freelancerDocumentUploader = upload.single("document");

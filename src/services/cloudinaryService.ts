@@ -13,17 +13,23 @@ cloudinary.config({
   api_secret: CLOUDINARY_API_SECRET,
 });
 
+type UploadOptions = {
+  folder?: string;
+  resourceType?: "image" | "raw" | "video" | "auto";
+};
+
 const uploadOnCloudinary = async (
   localFilePath: string,
   fileName: string,
   format: string,
+  options?: UploadOptions,
 ) => {
   try {
     if (!localFilePath) return null;
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "raw",
+      resource_type: options?.resourceType ?? "raw",
       filename_override: fileName,
-      folder: "hireUsDocs",
+      folder: options?.folder ?? "hireUsDocs",
       format: format,
     });
     return response;

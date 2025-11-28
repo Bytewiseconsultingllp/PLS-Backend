@@ -128,6 +128,99 @@ paths:
                     type: string
                     example: Failed to process platform agreement
 
+  /freelancer/registration-documents/upload:
+    post:
+      tags:
+        - Freelancer
+      summary: Upload verification documents (PDF) for freelancer registration
+      description: |
+        Upload a single PDF (identity, tax, or proof of address). The API stores the file in Cloudinary and returns the public URL so the frontend can include it in the registration payload (Legal Agreements section).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - documentPurpose
+                - document
+              properties:
+                documentPurpose:
+                  type: string
+                  enum:
+                    - IDENTITY
+                    - TAX
+                    - ADDRESS
+                  description: >
+                    Indicates which verification bucket this PDF belongs to. Use it to map the returned URL to the matching form section (Identity, Tax, or Proof of Address).
+                documentType:
+                  type: string
+                  example: PASSPORT
+                  description: >
+                    Optional free-form label echoed back in the response so the frontend can distinguish different selections under the same bucket
+                    (e.g., PASSPORT vs DRIVER_LICENSE for identity, W9 vs W8BEN for tax, UTILITY_BILL vs BANK_STATEMENT for address).
+                document:
+                  type: string
+                  format: binary
+                  description: PDF file (max 5MB).
+      responses:
+        "201":
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Document uploaded successfully.
+                  data:
+                    type: object
+                    properties:
+                      documentPurpose:
+                        type: string
+                        example: IDENTITY
+                        description: >
+                          The normalized bucket ("IDENTITY", "TAX", "ADDRESS") so the frontend always knows which part of the registration this URL belongs to.
+                      documentType:
+                        type: string
+                        nullable: true
+                        example: PASSPORT
+                        description: >
+                          Echo of the value sent in the request. Use this to differentiate multiple uploads within the same bucket (e.g., PASSPORT vs NATIONAL_ID).
+                      documentUrl:
+                        type: string
+                        example: https://res.cloudinary.com/primelogicsol/raw/upload/freelancerDocuments/identity/IDENTITY_passport_1732700000.pdf
+                        description: Cloudinary URL to store in the registration payload (e.g., `legalAgreements.identityDocUrl`).
+                      publicId:
+                        type: string
+                        example: freelancerDocuments/identity/IDENTITY_passport_1732700000
+                        description: Cloudinary public ID (useful for admin cleanup).
+                      bytes:
+                        type: number
+                        example: 502331
+                      format:
+                        type: string
+                        example: pdf
+                      originalFileName:
+                        type: string
+                        example: passport.pdf
+                        description: Original name from the upload for audit/logging.
+                      uploadedAt:
+                        type: string
+                        format: date-time
+                        example: "2025-11-27T12:00:00.000Z"
+                        description: ISO timestamp when the server finished uploading to Cloudinary.
+        "400":
+          description: Missing/invalid file or documentPurpose
+        "429":
+          description: Rate limit exceeded for document uploads
+        "500":
+          description: Server error while uploading to Cloudinary
+
   /freelancer/register:
     post:
       tags:

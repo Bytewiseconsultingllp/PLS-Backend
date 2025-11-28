@@ -4,6 +4,8 @@
  */
 
 import type { Request, Response } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
 import freelancerService from "../../services/freelancerService";
 import {
   FreelancerRegistrationSchema,
@@ -11,6 +13,70 @@ import {
   GetBidsQuerySchema,
 } from "../../validation/freelancerValidation";
 import { sendFreelancerRegistrationEmail } from "../../services/globalMailService";
+import { uploadOnCloudinary } from "../../services/cloudinaryService";
+import { ZodError } from "zod";
+
+interface AcceptPlatformAgreementBody {
+  freelancerEmail: string;
+  fullName: string;
+  country: string;
+  accepted: boolean;
+}
+
+interface UploadRegistrationDocumentBody {
+  documentPurpose?: string;
+  documentType?: string;
+}
+
+const DOCUMENT_PURPOSES = ["IDENTITY", "TAX", "ADDRESS"] as const;
+type DocumentPurpose = (typeof DOCUMENT_PURPOSES)[number];
+
+const DOCUMENT_PURPOSE_ALIASES: Record<string, DocumentPurpose> = {
+  identity: "IDENTITY",
+  identitydoc: "IDENTITY",
+  proofidentity: "IDENTITY",
+  tax: "TAX",
+  taxdoc: "TAX",
+  taxdocumentation: "TAX",
+  address: "ADDRESS",
+  addressverification: "ADDRESS",
+  proofofaddress: "ADDRESS",
+};
+
+const normalizeDocumentPurpose = (value?: string): DocumentPurpose | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const upper = trimmed.toUpperCase();
+  if (DOCUMENT_PURPOSES.includes(upper as DocumentPurpose)) {
+    return upper as DocumentPurpose;
+  }
+
+  const aliasKey = trimmed.toLowerCase();
+  if (DOCUMENT_PURPOSE_ALIASES[aliasKey]) {
+    return DOCUMENT_PURPOSE_ALIASES[aliasKey];
+  }
+
+  return null;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "Unknown error";
+};
+
+const parseIntOrDefault = (value: unknown, fallback: number): number => {
+  const candidate =
+    typeof value === "string"
+      ? value
+      : Array.isArray(value) && value.length > 0
+        ? value[0]
+        : null;
+
+  if (!candidate) return fallback;
+  const parsed = parseInt(candidate, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
 
 // ============================================
 // PUBLIC ROUTES
@@ -22,7 +88,7 @@ import { sendFreelancerRegistrationEmail } from "../../services/globalMailServic
  * Public access (no auth required as it's during registration)
  */
 export const acceptPlatformAgreement = async (
-  req: Request,
+  req: Request<Record<string, never>, unknown, AcceptPlatformAgreementBody>,
   res: Response,
 ): Promise<void> => {
   try {
@@ -82,12 +148,112 @@ export const acceptPlatformAgreement = async (
         message: "You can now proceed with your freelancer registration.",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in acceptPlatformAgreement:", error);
 
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to process platform agreement",
+      message: getErrorMessage(error) || "Failed to process platform agreement",
+    });
+  }
+};
+
+/**
+ * POST /api/freelancer/registration-documents/upload
+ * Upload supporting documents (identity, tax, proof of address) for registration
+ * Public access
+ */
+export const uploadRegistrationDocument = async (
+  req: Request<Record<string, never>, unknown, UploadRegistrationDocumentBody>,
+  res: Response,
+): Promise<void> => {
+  const file = req.file;
+  const { documentPurpose, documentType } = req.body;
+
+  try {
+    const normalizedPurpose = normalizeDocumentPurpose(documentPurpose);
+
+    if (!normalizedPurpose) {
+      res.status(400).json({
+        success: false,
+        message:
+          "documentPurpose is required and must be one of IDENTITY, TAX, or ADDRESS.",
+      });
+      return;
+    }
+
+    if (!file) {
+      res.status(400).json({
+        success: false,
+        message: "A PDF document is required.",
+      });
+      return;
+    }
+
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    const isPdfExtension = fileExtension === ".pdf";
+    const isPdfMime =
+      !file.mimetype || file.mimetype.toLowerCase() === "application/pdf";
+
+    if (!isPdfExtension || !isPdfMime) {
+      res.status(400).json({
+        success: false,
+        message: "Only PDF files are supported for freelancer verification.",
+      });
+      await fs.unlink(file.path).catch(() => null);
+      return;
+    }
+
+    const sanitizedBaseName = file.originalname
+      .replace(fileExtension, "")
+      .replace(/[^a-zA-Z0-9]/g, "_")
+      .replace(/_+/g, "_")
+      .toLowerCase();
+
+    const cloudinaryFileName = `${normalizedPurpose.toLowerCase()}_${sanitizedBaseName}_${Date.now()}`;
+
+    type UploadResponse = Awaited<ReturnType<typeof uploadOnCloudinary>>;
+    let uploadResponse: UploadResponse | null = null;
+    try {
+      uploadResponse = await uploadOnCloudinary(
+        file.path,
+        cloudinaryFileName,
+        "pdf",
+        {
+          folder: `freelancerDocuments/${normalizedPurpose.toLowerCase()}`,
+        },
+      );
+    } finally {
+      await fs.unlink(file.path).catch(() => null);
+    }
+
+    if (!uploadResponse || !uploadResponse.secure_url) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to upload document. Please try again.",
+      });
+      return;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Document uploaded successfully.",
+      data: {
+        documentPurpose: normalizedPurpose,
+        documentType: documentType ?? null,
+        documentUrl: uploadResponse.secure_url,
+        publicId: uploadResponse.public_id,
+        bytes: uploadResponse.bytes,
+        format: uploadResponse.format,
+        originalFileName: file.originalname,
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error: unknown) {
+    console.error("Error in uploadRegistrationDocument:", error);
+    res.status(500).json({
+      success: false,
+      message: getErrorMessage(error) || "Failed to upload document",
     });
   }
 };
@@ -147,10 +313,10 @@ export const registerFreelancer = async (
         emailSent,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in registerFreelancer:", error);
 
-    if (error.name === "ZodError") {
+    if (error instanceof ZodError) {
       res.status(400).json({
         success: false,
         message: "Validation error",
@@ -161,7 +327,7 @@ export const registerFreelancer = async (
 
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to register freelancer",
+      message: getErrorMessage(error) || "Failed to register freelancer",
     });
   }
 };
@@ -196,11 +362,12 @@ export const getMyProfile = async (
       success: true,
       data: freelancer,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getMyProfile:", error);
-    res.status(error.message === "Freelancer not found" ? 404 : 500).json({
+    const message = getErrorMessage(error);
+    res.status(message === "Freelancer not found" ? 404 : 500).json({
       success: false,
-      message: error.message || "Failed to fetch profile",
+      message: message || "Failed to fetch profile",
     });
   }
 };
@@ -232,11 +399,11 @@ export const getAvailableProjects = async (
       success: true,
       data: projects,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getAvailableProjects:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch available projects",
+      message: getErrorMessage(error) || "Failed to fetch available projects",
     });
   }
 };
@@ -272,19 +439,16 @@ export const getProjectDetails = async (
       success: true,
       data: project,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getProjectDetails:", error);
-    res
-      .status(
-        error.message === "Project not found" ||
-          error.message.includes("not available")
-          ? 404
-          : 500,
-      )
-      .json({
-        success: false,
-        message: error.message || "Failed to fetch project details",
-      });
+    const message = getErrorMessage(error);
+    const notFound =
+      message === "Project not found" ||
+      (typeof message === "string" && message.includes("not available"));
+    res.status(notFound ? 404 : 500).json({
+      success: false,
+      message: message || "Failed to fetch project details",
+    });
   }
 };
 
@@ -325,10 +489,10 @@ export const createBid = async (req: Request, res: Response): Promise<void> => {
       message: "Bid submitted successfully",
       data: newBid,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in createBid:", error);
 
-    if (error.name === "ZodError") {
+    if (error instanceof ZodError) {
       res.status(400).json({
         success: false,
         message: "Validation error",
@@ -339,7 +503,7 @@ export const createBid = async (req: Request, res: Response): Promise<void> => {
 
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to create bid",
+      message: getErrorMessage(error) || "Failed to create bid",
     });
   }
 };
@@ -384,10 +548,10 @@ export const getMyBids = async (req: Request, res: Response): Promise<void> => {
       success: true,
       data: bids,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getMyBids:", error);
 
-    if (error.name === "ZodError") {
+    if (error instanceof ZodError) {
       res.status(400).json({
         success: false,
         message: "Validation error",
@@ -398,7 +562,7 @@ export const getMyBids = async (req: Request, res: Response): Promise<void> => {
 
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch bids",
+      message: getErrorMessage(error) || "Failed to fetch bids",
     });
   }
 };
@@ -457,11 +621,12 @@ export const getBidDetails = async (
       success: true,
       data: bid,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getBidDetails:", error);
-    res.status(error.message === "Bid not found" ? 404 : 500).json({
+    const message = getErrorMessage(error);
+    res.status(message === "Bid not found" ? 404 : 500).json({
       success: false,
-      message: error.message || "Failed to fetch bid details",
+      message: message || "Failed to fetch bid details",
     });
   }
 };
@@ -526,11 +691,11 @@ export const withdrawBid = async (
       message: "Bid withdrawn successfully",
       data: updatedBid,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in withdrawBid:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to withdraw bid",
+      message: getErrorMessage(error) || "Failed to withdraw bid",
     });
   }
 };
@@ -559,8 +724,8 @@ export const getMySelectedProjects = async (
       return;
     }
 
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const page = parseIntOrDefault(req.query.page, 1);
+    const limit = parseIntOrDefault(req.query.limit, 10);
 
     const result = await freelancerService.getMySelectedProjects(
       userId,
@@ -572,11 +737,11 @@ export const getMySelectedProjects = async (
       success: true,
       data: result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getMySelectedProjects:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to fetch selected projects",
+      message: getErrorMessage(error) || "Failed to fetch selected projects",
     });
   }
 };
@@ -619,19 +784,16 @@ export const getMySelectedProjectDetails = async (
       success: true,
       data: project,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getMySelectedProjectDetails:", error);
-    res
-      .status(
-        error.message.includes("not found") ||
-          error.message.includes("not assigned")
-          ? 404
-          : 500,
-      )
-      .json({
-        success: false,
-        message: error.message || "Failed to fetch project details",
-      });
+    const message = getErrorMessage(error);
+    const notFound =
+      typeof message === "string" &&
+      (message.includes("not found") || message.includes("not assigned"));
+    res.status(notFound ? 404 : 500).json({
+      success: false,
+      message: message || "Failed to fetch project details",
+    });
   }
 };
 
@@ -673,19 +835,16 @@ export const getProjectMilestones = async (
       success: true,
       data: milestones,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getProjectMilestones:", error);
-    res
-      .status(
-        error.message.includes("not found") ||
-          error.message.includes("not assigned")
-          ? 404
-          : 500,
-      )
-      .json({
-        success: false,
-        message: error.message || "Failed to fetch project milestones",
-      });
+    const message = getErrorMessage(error);
+    const notFound =
+      typeof message === "string" &&
+      (message.includes("not found") || message.includes("not assigned"));
+    res.status(notFound ? 404 : 500).json({
+      success: false,
+      message: message || "Failed to fetch project milestones",
+    });
   }
 };
 
@@ -728,24 +887,22 @@ export const getMilestoneDetails = async (
       success: true,
       data: milestone,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in getMilestoneDetails:", error);
-    res
-      .status(
-        error.message.includes("not found") ||
-          error.message.includes("not assigned")
-          ? 404
-          : 500,
-      )
-      .json({
-        success: false,
-        message: error.message || "Failed to fetch milestone details",
-      });
+    const message = getErrorMessage(error);
+    const notFound =
+      typeof message === "string" &&
+      (message.includes("not found") || message.includes("not assigned"));
+    res.status(notFound ? 404 : 500).json({
+      success: false,
+      message: message || "Failed to fetch milestone details",
+    });
   }
 };
 
 export default {
   acceptPlatformAgreement,
+  uploadRegistrationDocument,
   registerFreelancer,
   getMyProfile,
   getAvailableProjects,
