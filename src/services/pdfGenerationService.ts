@@ -13,6 +13,18 @@ interface VisitorQuoteData {
   estimate: any;
 }
 
+interface ClientDraftQuoteData {
+  draft: any;
+  details: any;
+  services: any[];
+  industries: any[];
+  technologies: any[];
+  features: any[];
+  discount: any;
+  timeline: any;
+  estimate: any;
+}
+
 class PDFGenerationService {
   // Color palette matching the reference PDF
   private readonly colors = {
@@ -56,6 +68,34 @@ class PDFGenerationService {
   }
 
   /**
+   * Fetch complete client draft data for quote
+   */
+  async fetchClientDraftQuoteData(
+    draftId: string,
+  ): Promise<ClientDraftQuoteData | null> {
+    const draft = await db.clientProjectDraft.findUnique({
+      where: { id: draftId, deletedAt: null },
+      include: {
+        details: true,
+        services: true,
+        industries: true,
+        technologies: true,
+        features: true,
+        discount: true,
+        timeline: true,
+        estimate: true,
+        serviceAgreement: true,
+      },
+    });
+
+    if (!draft) {
+      return null;
+    }
+
+    return draft as any;
+  }
+
+  /**
    * Format text by replacing underscores with spaces and capitalizing
    */
   private formatText(text: string): string {
@@ -80,6 +120,50 @@ class PDFGenerationService {
     const { details, services, technologies, discount, timeline, estimate } =
       data;
 
+    return this.generatePDFFromData(
+      details,
+      services,
+      technologies,
+      discount,
+      timeline,
+      estimate,
+    );
+  }
+
+  /**
+   * Generate PDF from client draft data
+   */
+  async generateClientDraftQuotePDF(draftId: string): Promise<Buffer> {
+    const data = await this.fetchClientDraftQuoteData(draftId);
+
+    if (!data) {
+      throw new Error("Client draft not found");
+    }
+
+    const { details, services, technologies, discount, timeline, estimate } =
+      data;
+
+    return this.generatePDFFromData(
+      details,
+      services,
+      technologies,
+      discount,
+      timeline,
+      estimate,
+    );
+  }
+
+  /**
+   * Core PDF generation logic (used by both visitor and client draft quotes)
+   */
+  private async generatePDFFromData(
+    details: any,
+    services: any[],
+    technologies: any[],
+    discount: any,
+    timeline: any,
+    estimate: any,
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
         const doc = new PDFDocument({

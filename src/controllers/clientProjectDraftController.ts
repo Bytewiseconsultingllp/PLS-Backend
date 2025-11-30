@@ -611,6 +611,70 @@ export default {
   }),
 
   /**
+   * Request Formal Quote - Generate and download PDF
+   */
+  requestDraftQuote: asyncHandler(async (req: _Request, res) => {
+    const { draftId } = req.params;
+    const clientId = req.userFromToken?.uid;
+
+    if (!clientId) {
+      throw { status: UNAUTHORIZEDCODE, message: "Client ID is required" };
+    }
+
+    if (!draftId) {
+      throw { status: BADREQUESTCODE, message: "Draft ID is required" };
+    }
+
+    // Get draft and verify ownership
+    const draft = await clientProjectDraftService.getDraftById(
+      draftId,
+      clientId,
+    );
+    if (!draft) {
+      throw { status: NOTFOUNDCODE, message: "Draft not found" };
+    }
+
+    // Check if service agreement is accepted
+    const agreement = draft.serviceAgreement;
+
+    if (!agreement || !agreement.accepted) {
+      throw {
+        status: BADREQUESTCODE,
+        message: "Service agreement must be accepted before requesting quote",
+      };
+    }
+
+    try {
+      const { pdfGenerationService } = await import(
+        "../services/pdfGenerationService"
+      );
+      const pdfBuffer =
+        await pdfGenerationService.generateClientDraftQuotePDF(draftId);
+
+      // Set headers for PDF download
+      const filename = `quote-draft-${draftId}-${Date.now()}.pdf`;
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
+
+      // Send PDF
+      res.send(pdfBuffer);
+
+      // TODO: Also send PDF via email
+      // Implement email sending in future iteration
+    } catch (error) {
+      console.error("Error generating draft quote PDF:", error);
+      throw {
+        status: 500,
+        message: "Failed to generate quote PDF",
+      };
+    }
+  }),
+
+  /**
    * Delete a draft
    */
   deleteDraft: asyncHandler(async (req: _Request, res) => {

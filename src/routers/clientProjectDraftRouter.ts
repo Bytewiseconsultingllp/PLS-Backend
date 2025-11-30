@@ -154,6 +154,17 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/projects/draft/:draftId/quote
+ * @desc    Request formal quote (PDF download)
+ * @access  Private (CLIENT)
+ */
+router.get(
+  "/:draftId/quote",
+  authMiddleware.checkToken,
+  clientProjectDraftController.requestDraftQuote,
+);
+
+/**
  * @route   POST /api/v1/projects/draft/:draftId/finalize
  * @desc    Finalize draft and create actual project
  * @access  Private (CLIENT)

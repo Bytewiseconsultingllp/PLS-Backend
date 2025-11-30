@@ -811,6 +811,72 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /projects/draft/{draftId}/quote:
+    get:
+      tags:
+        - Client Project Draft
+        - Quote
+      summary: Request Formal Quote (PDF Download)
+      description: |
+        Generate and download a beautifully formatted PDF quote with all project draft details, 
+        pricing breakdown, and terms. Similar to visitor quotes but for authenticated clients.
+
+        **Prerequisites:**
+        - Service agreement must be accepted before requesting quote
+
+        The PDF includes:
+        - Project overview and scope
+        - Technology stack breakdown
+        - Detailed pricing (services, discount, total)
+        - Timeline with phases
+        - Commercial terms
+
+        The PDF is available for download immediately and will also be sent to the client's email.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: draftId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Draft ID
+      responses:
+        "200":
+          description: PDF quote generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: attachment; filename="quote-draft-{draftId}-{timestamp}.pdf"
+              schema:
+                type: string
+        "400":
+          description: Service agreement must be accepted first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                message: "Service agreement must be accepted before requesting quote"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Draft not found
+        "500":
+          description: Failed to generate quote PDF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                success: false
+                message: "Failed to generate quote PDF"
+
   /projects/draft/{draftId}/finalize:
     post:
       tags:
