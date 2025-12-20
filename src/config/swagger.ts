@@ -711,6 +711,11 @@ const swaggerDefinition = {
       description:
         "Public endpoints for retrieving reference data (enums) such as service categories, industry categories, technology categories, and feature categories. Used by frontend for populating dropdowns and form selectors.",
     },
+    {
+      name: "Project - Client Brief Document",
+      description:
+        "Client uploads project brief/requirements document (ONE-TIME ONLY, IMMUTABLE). Downloadable by CLIENT, ADMIN, MODERATOR, and assigned FREELANCERS.",
+    },
   ],
 };
 

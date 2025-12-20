@@ -914,6 +914,9 @@ model Project {
   // Bid Management - Control whether project is accepting new bids
   acceptingBids Boolean @default(true)
 
+  // Client Brief Document (One-time upload, immutable)
+  clientBriefDocumentUrl String? @db.VarChar(2048) // Cloudinary URL for client's project brief/requirements document
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?

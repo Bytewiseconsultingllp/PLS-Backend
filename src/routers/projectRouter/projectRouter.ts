@@ -5,6 +5,8 @@ import projectController from "../../controllers/projectController/projectContro
 import updateProjectController from "../../controllers/projectController/updateProjectController";
 import authMiddleware from "../../middlewares/authMiddleware";
 import getProjectController from "../../controllers/projectController/getProjectController";
+import projectDocumentController from "../../controllers/projectController/projectDocumentController";
+import { freelancerDocumentUploader } from "../../middlewares/multerMiddleware";
 export const projectRouter = Router();
 
 projectRouter
@@ -127,4 +129,29 @@ projectRouter.route("/updateProjectBySlug/:projectSlug").patch(
 projectRouter.route("/makeProjectOutsource/:projectSlug").patch(
   //  authMiddleware.checkIfUserIAdminOrModerator,
   updateProjectController.makeProjectOutsource,
+);
+
+// *************************Client Brief Document Upload/Download
+
+/**
+ * @route   POST /api/v1/project/:projectId/client-brief/upload
+ * @desc    Client uploads project brief/requirements document (ONE-TIME ONLY, IMMUTABLE)
+ * @access  CLIENT (project owner only)
+ */
+projectRouter.post(
+  "/:projectId/client-brief/upload",
+  authMiddleware.checkToken,
+  freelancerDocumentUploader, // Reuse existing multer middleware for single file
+  projectDocumentController.uploadClientBrief,
+);
+
+/**
+ * @route   GET /api/v1/project/:projectId/client-brief
+ * @desc    Get client brief document URL for download
+ * @access  CLIENT (owner), ADMIN, MODERATOR, FREELANCER (if assigned)
+ */
+projectRouter.get(
+  "/:projectId/client-brief",
+  authMiddleware.checkToken,
+  projectDocumentController.getClientBrief,
 );

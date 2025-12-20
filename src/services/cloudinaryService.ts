@@ -26,12 +26,21 @@ const uploadOnCloudinary = async (
 ) => {
   try {
     if (!localFilePath) return null;
-    const response = await cloudinary.uploader.upload(localFilePath, {
+    const uploadOptions: any = {
       resource_type: options?.resourceType ?? "raw",
       filename_override: fileName,
       folder: options?.folder ?? "hireUsDocs",
-      format: format,
-    });
+    };
+
+    // Only add format if it's not empty (let Cloudinary auto-detect for raw files)
+    if (format && format.trim() !== "") {
+      uploadOptions.format = format;
+    }
+
+    const response = await cloudinary.uploader.upload(
+      localFilePath,
+      uploadOptions,
+    );
     return response;
   } catch (error: unknown) {
     fs.unlinkSync(localFilePath);

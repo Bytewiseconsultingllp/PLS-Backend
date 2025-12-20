@@ -1,7 +1,9 @@
 import { Router } from "express";
 import projectController from "../../controllers/projectController/newProjectController";
+import projectDocumentController from "../../controllers/projectController/projectDocumentController";
 import authMiddleware from "../../middlewares/authMiddleware";
 import { validateDataMiddleware } from "../../middlewares/validationMiddleware";
+import { freelancerDocumentUploader } from "../../middlewares/multerMiddleware";
 import {
   clientProjectCreateSchema,
   clientProjectUpdateSchema,
@@ -211,6 +213,33 @@ router.delete(
   "/:id",
   authMiddleware.checkToken,
   projectController.deleteProject,
+);
+
+// ============================================
+// CLIENT BRIEF DOCUMENT ROUTES
+// ============================================
+
+/**
+ * @route   POST /api/projects/:projectId/client-brief/upload
+ * @desc    Client uploads project brief/requirements document (ONE-TIME ONLY, IMMUTABLE)
+ * @access  Private (CLIENT - project owner only)
+ */
+router.post(
+  "/:projectId/client-brief/upload",
+  authMiddleware.checkToken,
+  freelancerDocumentUploader,
+  projectDocumentController.uploadClientBrief,
+);
+
+/**
+ * @route   GET /api/projects/:projectId/client-brief
+ * @desc    Get client brief document URL for download
+ * @access  Private (CLIENT owner, ADMIN, MODERATOR, assigned FREELANCER)
+ */
+router.get(
+  "/:projectId/client-brief",
+  authMiddleware.checkToken,
+  projectDocumentController.getClientBrief,
 );
 
 export default router;

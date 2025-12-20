@@ -19,7 +19,7 @@
     "precommit": "bun run lint && bun run fmt && git add .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy", 
+    "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:seed": "bun run prisma/seed-pricing.ts",
