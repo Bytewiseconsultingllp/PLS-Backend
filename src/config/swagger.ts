@@ -23,6 +23,10 @@ const swaggerDefinition = {
       description: "Development server",
     },
     {
+      url: `https://pls-backend.vercel.app${BASEURL}`,
+      description: "Vercel Production server",
+    },
+    {
       url: `https://api.primelogicsol.com${BASEURL}`,
       description: "Production server",
     },
@@ -722,11 +726,11 @@ const swaggerDefinition = {
 const options: swaggerJsdoc.Options = {
   swaggerDefinition,
   // Path to API documentation files
+  // Use __dirname for production compatibility (works in both dev and production)
   apis: [
-    "./src/routers/**/*.ts",
-    "./src/controllers/**/*.ts",
-    "./src/swagger/**/*.yaml",
-    "./src/swagger/**/*.yml",
+    `${__dirname}/../routers/**/*.{ts,js}`,
+    `${__dirname}/../controllers/**/*.{ts,js}`,
+    `${__dirname}/../swagger/**/*.{yaml,yml}`,
   ],
 };
 
