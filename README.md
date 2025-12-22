@@ -7,7 +7,7 @@
 Access the complete interactive API documentation at:
 
 ```
-http://localhost:8000/api-docs
+http://localhost:8000/api-docs.
 ```
 
 **Quick Links:**
