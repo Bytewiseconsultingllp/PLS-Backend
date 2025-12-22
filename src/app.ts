@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 
 import cors from "cors";
 import dotenv from "dotenv";
+import fs from "node:fs";
 import helmet from "helmet";
 import path from "node:path";
 import { ALLOWED_ORIGIN } from "./config/config";
@@ -41,10 +42,21 @@ app.use(express.urlencoded({ parameterLimit: 50000, extended: true }));
 app.use(express.static(path.resolve(__dirname, "./public")));
 
 // ** SWAGGER API DOCUMENTATION **
-// Swagger JSON endpoint
+// Swagger JSON endpoint - serves pre-generated file in production, runtime spec in development
 app.get("/api-docs.json", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
+
+  // Try to load pre-generated swagger.json (for Vercel/production)
+  const preGeneratedPath = path.resolve(__dirname, "./public/swagger.json");
+
+  if (fs.existsSync(preGeneratedPath)) {
+    // Serve pre-generated file
+    const swaggerJson = fs.readFileSync(preGeneratedPath, "utf-8");
+    res.send(swaggerJson);
+  } else {
+    // Fallback to runtime-generated spec (development)
+    res.send(swaggerSpec);
+  }
 });
 
 // Custom Swagger UI with CDN assets (Vercel-compatible)
