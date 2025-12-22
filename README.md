@@ -14,7 +14,7 @@ http://localhost:8000/api-docs
 
 - 🚀 [Swagger Quick Start Guide](./SWAGGER_QUICK_START.md) - Get started in minutes
 - 📖 [Complete Swagger Documentation](./SWAGGER_DOCUMENTATION.md) - Detailed guide
-- 🔗 [OpenAPI JSON Spec](http://localhost:8000/api-docs.json) - For Postman/Insomnia import
+- 🔗 [OpenAPI JSON Spec](http://localhost:8000/api-docs.json) - For Postman/Insomnia import.
 
 <hr>
 
