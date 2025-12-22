@@ -2,7 +2,7 @@
 
 ## 📚 API Documentation
 
-### Interactive Swagger UI
+### Interactive Swagger UI.
 
 Access the complete interactive API documentation at:
 
